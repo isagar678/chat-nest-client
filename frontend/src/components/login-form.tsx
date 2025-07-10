@@ -38,8 +38,9 @@ const googleLogin = () => {
 
 export function LoginForm({
   className,
+  setToken,
   ...props
-}: React.ComponentProps<"div">) {
+}: any) {
 
   const [formData, setFormData] = useState({
     username: "",
@@ -52,7 +53,7 @@ export function LoginForm({
       username: formData.username,
       password: formData.password
     });
-    alert(token?.access_token)
+    setToken({ access_token: token?.access_token, refresh_token:token?.refresh_token})
   }
 
 

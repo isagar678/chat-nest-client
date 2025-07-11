@@ -9,30 +9,8 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useState } from "react"
-
-interface RegisterCredentials {
-    userName: string;
-    password: string;
-    email: string;
-    name: string;
-}
-
-interface LoginResponse {
-    access_token: string;
-    refresh_token: string;
-}
-
-async function registerUser(credentials: RegisterCredentials): Promise<LoginResponse> {
-    return fetch(`http://localhost:3000/auth/register`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(credentials)
-    })
-        .then(data => data.json());
-}
+import { useState, useContext } from "react"
+import AuthContext from "../context/AuthContext";
 
 const googleLogin = () => {
     window.location.href = 'http://localhost:3000/auth/google';
@@ -46,16 +24,24 @@ export function RegisterForm({
     const [formData, setFormData] = useState({
         name: "",
         email: "",
-        userName: "",
+        username: "",
         password: ""
     })
+    const { register } = useContext(AuthContext);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const token = await registerUser({
-            ...formData
-        });
-        alert(token?.access_token)
+        try {
+            await register({
+                username: formData.username,
+                name: formData.name,
+                password: formData.password
+            });
+            // Optionally, redirect or show success
+        } catch (error) {
+            // Optionally, handle error (e.g., show error message)
+            console.error(error);
+        }
     }
     
     return (
@@ -86,12 +72,12 @@ export function RegisterForm({
                             <div className="grid gap-3">
                                 <Label htmlFor="email">Username</Label>
                                 <Input
-                                    id="userName"
+                                    id="username"
                                     type="text"
                                     placeholder="Enter a username"
                                     required
-                                    value={formData.userName}
-                                    onChange={e => setFormData({ ...formData, userName: e.target.value })}
+                                    value={formData.username}
+                                    onChange={e => setFormData({ ...formData, username: e.target.value })}
                                 />
                             </div>
                             <div className="grid gap-3">

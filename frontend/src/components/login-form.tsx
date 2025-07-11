@@ -9,7 +9,8 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useState } from "react"
+import { useState, useContext } from "react"
+import AuthContext from "../context/AuthContext";
 
 interface LoginCredentials {
   username: string;
@@ -21,24 +22,12 @@ interface LoginResponse {
   refresh_token: string;
 }
 
-async function loginUser(credentials: LoginCredentials): Promise<LoginResponse> {
-  return fetch(`http://localhost:3000/auth/login`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(credentials)
-  })
-    .then(data => data.json());
-}
-
 const googleLogin = () => {
   window.location.href = 'http://localhost:3000/auth/google';
 };
 
 export function LoginForm({
   className,
-  setToken,
   ...props
 }: any) {
 
@@ -46,14 +35,20 @@ export function LoginForm({
     username: "",
     password: ""
   })
+  const { login } = useContext(AuthContext);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = await loginUser({
-      username: formData.username,
-      password: formData.password
-    });
-    setToken({ access_token: token?.access_token, refresh_token:token?.refresh_token})
+    try {
+      await login({
+        username: formData.username,
+        password: formData.password
+      });
+      // Optionally, redirect or show success
+    } catch (error) {
+      // Optionally, handle error (e.g., show error message)
+      console.error(error);
+    }
   }
 
 
@@ -90,12 +85,12 @@ export function LoginForm({
               </div>
               <div className="grid gap-3">
                 <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">Password - </Label>
                   <a
                     href="#"
                     className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
                   >
-                    Forgot your password?
+                    - Forgot your password?
                   </a>
                 </div>
                 <Input id="password" type="password" required

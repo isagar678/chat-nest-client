@@ -33,8 +33,9 @@ export function RegisterForm({
         e.preventDefault();
         try {
             await register({
-                username: formData.username,
                 name: formData.name,
+                userName: formData.username, // corrected to camelCase
+                email: formData.email,       // added email field
                 password: formData.password
             });
             // Optionally, redirect or show success

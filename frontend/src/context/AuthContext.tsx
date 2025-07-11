@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useCallback } from "react";
+import { createContext, useState, useEffect, useCallback } from "react";
 import axios from 'axios';
 
 interface AuthContextType {
@@ -88,7 +88,7 @@ const AuthProvider = ({ children }) => {
   // Fetch user data
   const fetchUserData = useCallback(async () => {
     try {
-      const response = await api.get('/auth/me'); // You may need to adjust this endpoint
+      const response = await api.get('/auth/profile');
       setUser(response.data);
     } catch {
       setUser(null);

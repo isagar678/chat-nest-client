@@ -9,8 +9,9 @@ import AuthContext from "./context/AuthContext";
 function App() {
 
   const {accessToken, loading} = useContext(AuthContext)
-
+  
   const ProtectedRoute = ({ children }) => {
+    
     if (loading) {
       return <div>Loading...</div>;
     }
@@ -19,6 +20,8 @@ function App() {
       // Redirect to login if not authenticated
       return <Navigate to="/login" replace />;
     }
+    
+    console.log('Access token exists, rendering protected content');
     return children;
   };
 

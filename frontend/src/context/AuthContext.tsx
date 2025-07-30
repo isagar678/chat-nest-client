@@ -27,7 +27,6 @@ const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const interceptorRef = useRef<number | null>(null);
-  const initialRefreshAttempted = useRef(false);
 
   // Attach access token to requests
   useEffect(() => {
@@ -55,9 +54,12 @@ const AuthProvider = ({ children }) => {
     setRefreshing(true);
     try {
       const response = await api.post('/auth/token', {});
-      const { access_token, refresh_token } = response.data;
+      const { access_token } = response.data;
 
       setAccessToken(access_token);
+      
+      // Also set the token in axios defaults to ensure it's used immediately
+      api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
       
       // The new refresh token is automatically set in the cookie by the server
       // We don't need to store it in state, just use the access token
@@ -108,43 +110,57 @@ const AuthProvider = ({ children }) => {
   }, [refreshAccessToken, refreshing]);
 
   // Fetch user data
-  const fetchUserData = useCallback(async () => {
+  const fetchUserData = useCallback(async (token?: string) => {
     try {
+      const tokenToUse = token || accessToken;
+      console.log('Fetching user data with token:', tokenToUse ? 'exists' : 'null');
       const response = await api.get('/auth/profile');
       setUser(response.data);
-    } catch {
+      console.log('User data fetched successfully');
+    } catch (error) {
+      console.error('Failed to fetch user data:', error);
       setUser(null);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [api, accessToken]);
 
   // On mount, try to refresh token and fetch user
   useEffect(() => {
     let mounted = true;
     
     (async () => {
-      // Only attempt initial refresh once
-      if (initialRefreshAttempted.current) {
-        if (!accessToken) {
-          setLoading(false);
-        }
+      console.log('Initial token refresh useEffect triggered');
+      console.log('accessToken:', accessToken);
+      
+      // If we already have an access token, just fetch user data
+      if (accessToken) {
+        console.log('Access token already exists, fetching user data...');
+        await fetchUserData();
         return;
       }
       
-      initialRefreshAttempted.current = true;
+      console.log('No access token, attempting initial token refresh...');
       
       try {
         const response = await api.post('/auth/token', {});
         const { access_token } = response.data;
+        console.log('Initial token refresh successful, got access token');
         
         if (mounted) {
+          console.log('Setting access token in state...');
           setAccessToken(access_token);
-          await fetchUserData();
+          
+          // Also set the token in axios defaults to ensure it's used immediately
+          api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+          
+          console.log('Access token set, fetching user data...');
+          await fetchUserData(access_token);
         }
       } catch (error) {
         console.error('Initial token refresh failed:', error);
         if (mounted) {
+          console.log('Setting loading to false due to error');
           setLoading(false);
         }
       }
@@ -160,7 +176,8 @@ const AuthProvider = ({ children }) => {
     const response = await api.post('/auth/login', credentials);
     const { access_token } = response.data;
     setAccessToken(access_token);
-    await fetchUserData();
+    api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+    await fetchUserData(access_token);
   };
 
   // Register
@@ -168,7 +185,8 @@ const AuthProvider = ({ children }) => {
     const response = await api.post('/auth/register', credentials);
     const { access_token } = response.data;
     setAccessToken(access_token);
-    await fetchUserData();
+    api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+    await fetchUserData(access_token);
   };
 
   // Google login

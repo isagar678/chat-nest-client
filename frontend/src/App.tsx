@@ -21,7 +21,6 @@ function App() {
       return <Navigate to="/login" replace />;
     }
     
-    console.log('Access token exists, rendering protected content');
     return children;
   };
 

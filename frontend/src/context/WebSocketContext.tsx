@@ -10,19 +10,23 @@ type Props = {
 
 export const SocketProvider: React.FC<Props> = ({ children }) => {
   const { accessToken } = useContext(AuthContext);
+  
+  console.log(accessToken,'accesstoken')
+
 
   const socket = useMemo(() => {
     if (!accessToken) {
       return null;
     }
-    
+    console.log('making 2nd attempt')
     return io('http://localhost:3000', {
       transports: ['websocket'],
-      extraHeaders: {
-        Authorization: `Bearer ${accessToken}`,
+      auth: {
+        token: accessToken,
       },
     });
   }, [accessToken]);
+
 
   useEffect(() => {
     return () => {

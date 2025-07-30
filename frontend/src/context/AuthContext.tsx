@@ -113,10 +113,8 @@ const AuthProvider = ({ children }) => {
   const fetchUserData = useCallback(async (token?: string) => {
     try {
       const tokenToUse = token || accessToken;
-      console.log('Fetching user data with token:', tokenToUse ? 'exists' : 'null');
       const response = await api.get('/auth/profile');
       setUser(response.data);
-      console.log('User data fetched successfully');
     } catch (error) {
       console.error('Failed to fetch user data:', error);
       setUser(null);
@@ -130,37 +128,29 @@ const AuthProvider = ({ children }) => {
     let mounted = true;
     
     (async () => {
-      console.log('Initial token refresh useEffect triggered');
-      console.log('accessToken:', accessToken);
       
       // If we already have an access token, just fetch user data
       if (accessToken) {
-        console.log('Access token already exists, fetching user data...');
         await fetchUserData();
         return;
       }
       
-      console.log('No access token, attempting initial token refresh...');
       
       try {
         const response = await api.post('/auth/token', {});
         const { access_token } = response.data;
-        console.log('Initial token refresh successful, got access token');
         
         if (mounted) {
-          console.log('Setting access token in state...');
           setAccessToken(access_token);
           
           // Also set the token in axios defaults to ensure it's used immediately
           api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
           
-          console.log('Access token set, fetching user data...');
           await fetchUserData(access_token);
         }
       } catch (error) {
         console.error('Initial token refresh failed:', error);
         if (mounted) {
-          console.log('Setting loading to false due to error');
           setLoading(false);
         }
       }

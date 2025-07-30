@@ -12,16 +12,6 @@ import { Label } from "@/components/ui/label"
 import { useState, useContext } from "react"
 import AuthContext from "../context/AuthContext";
 
-interface LoginCredentials {
-  username: string;
-  password: string;
-}
-
-interface LoginResponse {
-  access_token: string;
-  refresh_token: string;
-}
-
 const googleLogin = () => {
   window.location.href = 'http://localhost:3000/auth/google';
 };

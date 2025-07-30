@@ -1,8 +1,9 @@
-import { createContext, useState, useEffect, useCallback } from "react";
+import { createContext, useState, useEffect, useCallback, useRef } from "react";
 import axios from 'axios';
 
 interface AuthContextType {
   user: any;
+  accessToken: string | null;
   login: (credentials: { username: string; password: string }) => Promise<void>;
   register: (credentials: { username: string; name: string; password: string }) => Promise<void>;
   logout: () => void;
@@ -14,41 +15,53 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const API_BASE = 'http://localhost:3000';
 
+// Create axios instance outside component to prevent recreation
+const api = axios.create({
+  baseURL: API_BASE,
+  withCredentials: true, // send cookies (for refresh token)
+});
+
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState<any>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
-  // Set up axios instance
-  const api = axios.create({
-    baseURL: API_BASE,
-    withCredentials: true, // send cookies (for refresh token)
-  });
+  const interceptorRef = useRef<number | null>(null);
+  const initialRefreshAttempted = useRef(false);
 
   // Attach access token to requests
-  api.interceptors.request.use(
-    (config) => {
-      if (accessToken) {
-        config.headers['Authorization'] = `Bearer ${accessToken}`;
-      }
-      return config;
-    },
-    (error) => Promise.reject(error)
-  );
+  useEffect(() => {
+    const requestInterceptor = api.interceptors.request.use(
+      (config) => {
+        if (accessToken) {
+          config.headers['Authorization'] = `Bearer ${accessToken}`;
+        }
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
+
+    return () => {
+      api.interceptors.request.eject(requestInterceptor);
+    };
+  }, [accessToken]);
 
   // Refresh token logic
   const refreshAccessToken = useCallback(async () => {
+    if (refreshing) {
+      return null;
+    }
+    
     setRefreshing(true);
     try {
-      const response = await axios.post(
-        `${API_BASE}/auth/token`,
-        {},
-        { withCredentials: true }
-      );
-      const { access_token } = response.data;
+      const response = await api.post('/auth/token', {});
+      const { access_token, refresh_token } = response.data;
+
       setAccessToken(access_token);
-      api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+      
+      // The new refresh token is automatically set in the cookie by the server
+      // We don't need to store it in state, just use the access token
+      
       return access_token;
     } catch (err) {
       setAccessToken(null);
@@ -57,11 +70,16 @@ const AuthProvider = ({ children }) => {
     } finally {
       setRefreshing(false);
     }
-  }, [api]);
+  }, [refreshing]);
 
   // Axios response interceptor for 401
   useEffect(() => {
-    const interceptor = api.interceptors.response.use(
+    // Remove existing interceptor if it exists
+    if (interceptorRef.current !== null) {
+      api.interceptors.response.eject(interceptorRef.current);
+    }
+
+    interceptorRef.current = api.interceptors.response.use(
       (response) => response,
       async (error) => {
         const originalRequest = error.config;
@@ -80,10 +98,14 @@ const AuthProvider = ({ children }) => {
         return Promise.reject(error);
       }
     );
+
     return () => {
-      api.interceptors.response.eject(interceptor);
+      if (interceptorRef.current !== null) {
+        api.interceptors.response.eject(interceptorRef.current);
+        interceptorRef.current = null;
+      }
     };
-  }, [accessToken, refreshAccessToken, refreshing, api]);
+  }, [refreshAccessToken, refreshing]);
 
   // Fetch user data
   const fetchUserData = useCallback(async () => {
@@ -95,36 +117,49 @@ const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [api]);
+  }, []);
 
   // On mount, try to refresh token and fetch user
   useEffect(() => {
+    let mounted = true;
+    
     (async () => {
+      // Only attempt initial refresh once
+      if (initialRefreshAttempted.current) {
+        if (!accessToken) {
+          setLoading(false);
+        }
+        return;
+      }
+      
+      initialRefreshAttempted.current = true;
+      
       try {
-        const response = await axios.post(
-          `${API_BASE}/auth/token`,
-          {},
-          { withCredentials: true }
-        );
+        const response = await api.post('/auth/token', {});
         const { access_token } = response.data;
-        setAccessToken(access_token);
-        api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
-        axios.defaults.withCredentials = true;        
-        await fetchUserData();
-      } catch {
-        setLoading(false);
+        
+        if (mounted) {
+          setAccessToken(access_token);
+          await fetchUserData();
+        }
+      } catch (error) {
+        console.error('Initial token refresh failed:', error);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     })();
-    // eslint-disable-next-line
-  }, []);
+
+    return () => {
+      mounted = false;
+    };
+  }, [fetchUserData]);
 
   // Login
   const login = async (credentials: { username: string; password: string }) => {
     const response = await api.post('/auth/login', credentials);
     const { access_token } = response.data;
     setAccessToken(access_token);
-    api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
-    axios.defaults.withCredentials = true;
     await fetchUserData();
   };
 
@@ -133,8 +168,6 @@ const AuthProvider = ({ children }) => {
     const response = await api.post('/auth/register', credentials);
     const { access_token } = response.data;
     setAccessToken(access_token);
-    api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
-    axios.defaults.withCredentials = true;
     await fetchUserData();
   };
 
@@ -148,12 +181,12 @@ const AuthProvider = ({ children }) => {
     setAccessToken(null);
     setUser(null);
     // Optionally, call a logout endpoint to clear refresh token cookie
-    axios.post(`${API_BASE}/auth/logout`, {}, { withCredentials: true }).catch(() => {});
+    api.post('/auth/logout').catch(() => {});
   };
 
   return (
     <AuthContext.Provider
-      value={{ user, login, register, logout, loginWithGoogle, loading }}
+      value={{ user, accessToken, login, register, logout, loginWithGoogle, loading }}
     >
       {children}
     </AuthContext.Provider>

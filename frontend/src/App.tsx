@@ -5,6 +5,7 @@ import {Dashboard} from "./components/Dashboard";
 import Chats from "./components/MessageBoard";
 import { useContext } from "react";
 import AuthContext from "./context/AuthContext";
+import { ChatApp } from "./components/chat/ChatApp";
 
 function App() {
 
@@ -44,6 +45,7 @@ function App() {
         }/>
         <Route path="/login" element={<LoginForm className="flex min-h-svh flex-col items-center justify-center" />} />
         <Route path="/register" element={<RegisterForm className="flex min-h-svh flex-col items-center justify-center" />} />
+        <Route path="/o" element={<ChatApp/>} />
       </Routes>
     </BrowserRouter>
   )

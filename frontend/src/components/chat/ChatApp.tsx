@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { ChatSidebar } from './ChatSidebar';
 import { ChatHeader } from './ChatHeader';
 import { ChatArea } from './ChatArea';
@@ -7,201 +7,177 @@ import { Button } from '@/components/ui/button';
 import { Menu, X } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import AuthContext from '@/context/AuthContext';
+import { useApi } from '@/lib/useApi';
 
 interface Message {
-  id: string;
+  id: number;
   content: string;
   timestamp: string;
-  sender: {
-    id: string;
-    name: string;
-    avatar?: string;
-  };
   isSent: boolean;
-  isRead?: boolean;
-  isDelivered?: boolean;
 }
 
-interface Chat {
-  id: string;
+interface FriendDetails {
+  id: number;
   name: string;
-  avatar?: string;
-  isOnline?: boolean;
+  userName: string;
+}
+
+interface Friend {
+  friendDetails: FriendDetails;
   messages: Message[];
 }
 
-const mockChats: Record<string, Chat> = {
-  '1': {
-    id: '1',
-    name: 'Sarah Johnson',
-    avatar: '/placeholder.svg',
-    isOnline: true,
-    messages: [
-      {
-        id: '1',
-        content: 'Hey! How are you doing today?',
-        timestamp: '10:30 AM',
-        sender: { id: '2', name: 'Sarah Johnson', avatar: '/placeholder.svg' },
-        isSent: false,
-        isDelivered: true,
-        isRead: true,
+interface AllChats {
+  friends: Friend[];
+}
+
+const initialChats: AllChats = {
+  friends: [
+    {
+      friendDetails: {
+        id: 1,
+        name: 'Sarah Johnson',
+        userName: 'sarah',
       },
-      {
-        id: '2',
-        content: 'I\'m doing great, thanks! Just working on some new designs. How about you?',
-        timestamp: '10:32 AM',
-        sender: { id: '1', name: 'You' },
-        isSent: true,
-        isDelivered: true,
-        isRead: true,
+      messages: [
+        {
+          id: 1,
+          content: 'Hey! How are you doing today?',
+          timestamp: '2025-01-08T10:30:00.000Z',
+          isSent: false,
+        },
+        {
+          id: 2,
+          content: 'I\'m doing great, thanks! Just working on some new designs. How about you?',
+          timestamp: '2025-01-08T10:32:00.000Z',
+          isSent: true,
+        },
+        {
+          id: 3,
+          content: 'That sounds exciting! I\'d love to see them when you\'re ready to share.',
+          timestamp: '2025-01-08T10:33:00.000Z',
+          isSent: false,
+        },
+        {
+          id: 4,
+          content: 'Absolutely! I\'ll send them over later today. They\'re for the new chat app project we discussed.',
+          timestamp: '2025-01-08T10:35:00.000Z',
+          isSent: true,
+        },
+      ]
+    },
+    {
+      friendDetails: {
+        id: 2,
+        name: 'Alex Chen',
+        userName: 'alex',
       },
-      {
-        id: '3',
-        content: 'That sounds exciting! I\'d love to see them when you\'re ready to share.',
-        timestamp: '10:33 AM',
-        sender: { id: '2', name: 'Sarah Johnson', avatar: '/placeholder.svg' },
-        isSent: false,
-        isDelivered: true,
-        isRead: true,
+      messages: [
+        {
+          id: 5,
+          content: 'The new mockups look great!',
+          timestamp: '2025-01-08T09:15:00.000Z',
+          isSent: false,
+        },
+        {
+          id: 6,
+          content: 'Thanks! I\'ve been working on the color scheme improvements.',
+          timestamp: '2025-01-08T09:20:00.000Z',
+          isSent: true,
+        },
+      ]
+    },
+    {
+      friendDetails: {
+        id: 3,
+        name: 'Mike Chen',
+        userName: 'mike',
       },
-      {
-        id: '4',
-        content: 'Absolutely! I\'ll send them over later today. They\'re for the new chat app project we discussed.',
-        timestamp: '10:35 AM',
-        sender: { id: '1', name: 'You' },
-        isSent: true,
-        isDelivered: true,
-        isRead: false,
+      messages: [
+        {
+          id: 7,
+          content: 'Thanks for the help yesterday',
+          timestamp: '2025-01-08T14:45:00.000Z',
+          isSent: false,
+        },
+        {
+          id: 8,
+          content: 'No problem! Happy to help anytime.',
+          timestamp: '2025-01-08T14:50:00.000Z',
+          isSent: true,
+        },
+      ]
+    },
+    {
+      friendDetails: {
+        id: 4,
+        name: 'Team Lead',
+        userName: 'teamlead',
       },
-    ]
-  },
-  '2': {
-    id: '2',
-    name: 'Design Team',
-    isOnline: false,
-    messages: [
-      {
-        id: '5',
-        content: 'The new mockups look great!',
-        timestamp: '9:15 AM',
-        sender: { id: '3', name: 'Alex', avatar: '/placeholder.svg' },
-        isSent: false,
-        isDelivered: true,
-        isRead: true,
-      },
-      {
-        id: '6',
-        content: 'Thanks! I\'ve been working on the color scheme improvements.',
-        timestamp: '9:20 AM',
-        sender: { id: '1', name: 'You' },
-        isSent: true,
-        isDelivered: true,
-        isRead: true,
-      },
-    ]
-  },
-  '3': {
-    id: '3',
-    name: 'Mike Chen',
-    avatar: '/placeholder.svg',
-    isOnline: true,
-    messages: [
-      {
-        id: '7',
-        content: 'Thanks for the help yesterday',
-        timestamp: '2:45 PM',
-        sender: { id: '4', name: 'Mike Chen', avatar: '/placeholder.svg' },
-        isSent: false,
-        isDelivered: true,
-        isRead: true,
-      },
-      {
-        id: '8',
-        content: 'No problem! Happy to help anytime.',
-        timestamp: '2:50 PM',
-        sender: { id: '1', name: 'You' },
-        isSent: true,
-        isDelivered: true,
-        isRead: true,
-      },
-    ]
-  },
-  '4': {
-    id: '4',
-    name: 'Project Updates',
-    isOnline: false,
-    messages: [
-      {
-        id: '9',
-        content: 'Sprint planning meeting at 3 PM',
-        timestamp: 'Yesterday',
-        sender: { id: '5', name: 'Team Lead', avatar: '/placeholder.svg' },
-        isSent: false,
-        isDelivered: true,
-        isRead: false,
-      },
-    ]
-  },
+      messages: [
+        {
+          id: 9,
+          content: 'Sprint planning meeting at 3 PM',
+          timestamp: '2025-01-07T15:00:00.000Z',
+          isSent: false,
+        },
+      ]
+    },
+  ]
 };
 
 export function ChatApp() {
-  const [selectedChatId, setSelectedChatId] = useState('1');
-  const [chats, setChats] = useState(mockChats);
+  const [selectedFriendIndex, setSelectedFriendIndex] = useState(0);
+  const [allChats, setAllChats] = useState(initialChats);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
+  
 
-  const currentChat = chats[selectedChatId];
-  const messages = currentChat?.messages || [];
 
-  const handleSendMessage = (content: string) => {
-    if (!selectedChatId) return;
 
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      content,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      sender: { id: '1', name: 'You' },
-      isSent: true,
-      isDelivered: false,
-      isRead: false,
+  const api = useApi();
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await api.get('/user/my/friends');
+        console.log('Users fetched:', response.data);
+        setAllChats(response.data)
+      } catch (error) {
+        console.error('Failed to fetch users:', error);
+      }
     };
 
-    setChats(prev => ({
+    fetchUsers();
+  }, [api]);
+
+
+  const currentFriend = allChats.friends[selectedFriendIndex];
+  const messages = currentFriend?.messages || [];
+
+  const handleSendMessage = (content: string) => {
+    if (selectedFriendIndex === null) return;
+
+    const newMessage: Message = {
+      id: Date.now(),
+      content,
+      timestamp: new Date().toISOString(),
+      isSent: true,
+    };
+
+    setAllChats(prev => ({
       ...prev,
-      [selectedChatId]: {
-        ...prev[selectedChatId],
-        messages: [...prev[selectedChatId].messages, newMessage]
-      }
+      friends: prev.friends.map((friend, index) => 
+        index === selectedFriendIndex 
+          ? { ...friend, messages: [...friend.messages, newMessage] }
+          : friend
+      )
     }));
-
-    // Simulate delivery and read status updates
-    setTimeout(() => {
-      setChats(prev => ({
-        ...prev,
-        [selectedChatId]: {
-          ...prev[selectedChatId],
-          messages: prev[selectedChatId].messages.map(msg => 
-            msg.id === newMessage.id ? { ...msg, isDelivered: true } : msg
-          )
-        }
-      }));
-    }, 1000);
-
-    setTimeout(() => {
-      setChats(prev => ({
-        ...prev,
-        [selectedChatId]: {
-          ...prev[selectedChatId],
-          messages: prev[selectedChatId].messages.map(msg => 
-            msg.id === newMessage.id ? { ...msg, isRead: true } : msg
-          )
-        }
-      }));
-    }, 2000);
   };
 
-  const handleChatSelect = (chatId: string) => {
-    setSelectedChatId(chatId);
+  const handleChatSelect = (friendIndex: number) => {
+    setSelectedFriendIndex(friendIndex);
     if (isMobile) {
       setIsSidebarOpen(false);
     }
@@ -225,7 +201,8 @@ export function ChatApp() {
       )}>
         <ChatSidebar 
           onChatSelect={handleChatSelect} 
-          selectedChatId={selectedChatId}
+          selectedChatId={selectedFriendIndex}
+          friends={allChats.friends}
         />
       </div>
 
@@ -246,12 +223,12 @@ export function ChatApp() {
           </div>
         )}
 
-        {selectedChatId ? (
+        {selectedFriendIndex !== null ? (
           <>
             <ChatHeader 
-              chatName={currentChat?.name || ""}
-              isOnline={currentChat?.isOnline || false}
-              avatar={currentChat?.avatar}
+              chatName={currentFriend?.friendDetails.name || ""}
+              isOnline={false}
+              avatar={undefined}
             />
             <ChatArea messages={messages} />
             <ChatInput onSendMessage={handleSendMessage} />

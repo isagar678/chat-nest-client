@@ -4,17 +4,10 @@ import { MessageBubble } from './MessageBubble';
 import { cn } from '@/lib/utils';
 
 interface Message {
-    id: string;
+    id: number;
     content: string;
     timestamp: string;
-    sender: {
-        id: string;
-        name: string;
-        avatar?: string;
-    };
     isSent: boolean;
-    isRead?: boolean;
-    isDelivered?: boolean;
 }
 
 interface ChatAreaProps {
@@ -40,7 +33,7 @@ export function ChatArea({ messages, className }: ChatAreaProps) {
         if (index === 0) return true;
 
         const previousMessage = messages[index - 1];
-        return previousMessage.sender.id !== currentMessage.sender.id || previousMessage.isSent;
+        return !previousMessage.isSent || previousMessage.isSent !== currentMessage.isSent;
     };
 
     return (

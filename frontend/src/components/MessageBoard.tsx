@@ -17,7 +17,7 @@ function Chats({
   className
 }: any) {
   
-  const {socket} = useContext(SocketContext);
+  const socket = useContext(SocketContext);
 
   useSocketEvents(socket, eventHandlers);
 

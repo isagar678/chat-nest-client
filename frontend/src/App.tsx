@@ -38,14 +38,16 @@ function App() {
             <Dashboard />
           </ProtectedRoute>
         }/>
-        <Route path="/chats" element={
+        <Route path="/o" element={
           <ProtectedRoute>
             <Chats className="flex min-h-svh flex-col items-center justify-center"/>
           </ProtectedRoute>
         }/>
         <Route path="/login" element={<LoginForm className="flex min-h-svh flex-col items-center justify-center" />} />
         <Route path="/register" element={<RegisterForm className="flex min-h-svh flex-col items-center justify-center" />} />
-        <Route path="/o" element={<ChatApp/>} />
+        <Route path="/chats" element={<ProtectedRoute>
+            <ChatApp/>
+          </ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   )

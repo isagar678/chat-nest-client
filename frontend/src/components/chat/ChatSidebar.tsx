@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Search, MessageCircle, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useState, useMemo } from 'react';
 
 interface FriendDetails {
   id: number;
@@ -23,11 +24,24 @@ interface ChatSidebarProps {
   friends: Friend[];
 }
 
-
-
 export function ChatSidebar({ className, onChatSelect, selectedChatId, friends }: ChatSidebarProps) {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredFriends = useMemo(() => {
+    if (!searchTerm.trim()) return friends;
+    
+    const term = searchTerm.toLowerCase();
+    return friends.filter(friend => 
+      friend.friendDetails.name.toLowerCase().includes(term) ||
+      friend.friendDetails.userName.toLowerCase().includes(term) ||
+      friend.messages.some(msg => 
+        msg.content.toLowerCase().includes(term)
+      )
+    );
+  }, [friends, searchTerm]);
+
   return (
-    <div className={cn("w-80 bg-chat-sidebar border-r border-border flex flex-col", className)}>
+    <div className={cn("w-80 bg-card border-r border-border flex flex-col h-full", className)}>
       {/* Header */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-3 mb-4">
@@ -41,6 +55,8 @@ export function ChatSidebar({ className, onChatSelect, selectedChatId, friends }
           <Input
             placeholder="Search conversations..."
             className="pl-10 bg-background border-border"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
       </div>
@@ -48,7 +64,12 @@ export function ChatSidebar({ className, onChatSelect, selectedChatId, friends }
       {/* Chat List */}
       <ScrollArea className="flex-1">
         <div className="p-2">
-          {friends.map((friend, index) => {
+          {filteredFriends.length === 0 ? (
+            <div className="p-4 text-center text-muted-foreground">
+              No conversations found
+            </div>
+          ) : (
+            filteredFriends.map((friend, index) => {
             const lastMessage = friend.messages[friend.messages.length - 1];
             const lastMessageTime = lastMessage ? new Date(lastMessage.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
             
@@ -84,7 +105,8 @@ export function ChatSidebar({ className, onChatSelect, selectedChatId, friends }
                 </div>
               </div>
             );
-          })}
+            })
+          )}
         </div>
       </ScrollArea>
     </div>

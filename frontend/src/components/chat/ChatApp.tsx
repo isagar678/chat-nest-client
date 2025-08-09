@@ -46,95 +46,17 @@ const initialChats: AllChats = {
           content: 'Hey! How are you doing today?',
           timestamp: '2025-01-08T10:30:00.000Z',
           isSent: false,
-        },
-        {
-          id: 2,
-          content: 'I\'m doing great, thanks! Just working on some new designs. How about you?',
-          timestamp: '2025-01-08T10:32:00.000Z',
-          isSent: true,
-        },
-        {
-          id: 3,
-          content: 'That sounds exciting! I\'d love to see them when you\'re ready to share.',
-          timestamp: '2025-01-08T10:33:00.000Z',
-          isSent: false,
-        },
-        {
-          id: 4,
-          content: 'Absolutely! I\'ll send them over later today. They\'re for the new chat app project we discussed.',
-          timestamp: '2025-01-08T10:35:00.000Z',
-          isSent: true,
-        },
-      ]
-    },
-    {
-      friendDetails: {
-        id: 2,
-        name: 'Alex Chen',
-        userName: 'alex',
-      },
-      messages: [
-        {
-          id: 5,
-          content: 'The new mockups look great!',
-          timestamp: '2025-01-08T09:15:00.000Z',
-          isSent: false,
-        },
-        {
-          id: 6,
-          content: 'Thanks! I\'ve been working on the color scheme improvements.',
-          timestamp: '2025-01-08T09:20:00.000Z',
-          isSent: true,
-        },
-      ]
-    },
-    {
-      friendDetails: {
-        id: 3,
-        name: 'Mike Chen',
-        userName: 'mike',
-      },
-      messages: [
-        {
-          id: 7,
-          content: 'Thanks for the help yesterday',
-          timestamp: '2025-01-08T14:45:00.000Z',
-          isSent: false,
-        },
-        {
-          id: 8,
-          content: 'No problem! Happy to help anytime.',
-          timestamp: '2025-01-08T14:50:00.000Z',
-          isSent: true,
-        },
-      ]
-    },
-    {
-      friendDetails: {
-        id: 4,
-        name: 'Team Lead',
-        userName: 'teamlead',
-      },
-      messages: [
-        {
-          id: 9,
-          content: 'Sprint planning meeting at 3 PM',
-          timestamp: '2025-01-07T15:00:00.000Z',
-          isSent: false,
-        },
+        }
       ]
     },
   ]
-};
+}
 
 export function ChatApp() {
   const [selectedFriendIndex, setSelectedFriendIndex] = useState(0);
   const [allChats, setAllChats] = useState(initialChats);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
-  
-
-
 
   const api = useApi();
 
@@ -168,8 +90,8 @@ export function ChatApp() {
 
     setAllChats(prev => ({
       ...prev,
-      friends: prev.friends.map((friend, index) => 
-        index === selectedFriendIndex 
+      friends: prev.friends.map((friend, index) =>
+        index === selectedFriendIndex
           ? { ...friend, messages: [...friend.messages, newMessage] }
           : friend
       )
@@ -187,7 +109,7 @@ export function ChatApp() {
     <div className="h-screen flex bg-background">
       {/* Mobile overlay */}
       {isMobile && isSidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40"
           onClick={() => setIsSidebarOpen(false)}
         />
@@ -199,8 +121,8 @@ export function ChatApp() {
         isMobile ? "fixed inset-y-0 left-0" : "relative",
         isMobile && !isSidebarOpen ? "-translate-x-full" : "translate-x-0"
       )}>
-        <ChatSidebar 
-          onChatSelect={handleChatSelect} 
+        <ChatSidebar
+          onChatSelect={handleChatSelect}
           selectedChatId={selectedFriendIndex}
           friends={allChats.friends}
         />
@@ -225,7 +147,7 @@ export function ChatApp() {
 
         {selectedFriendIndex !== null ? (
           <>
-            <ChatHeader 
+            <ChatHeader
               chatName={currentFriend?.friendDetails.name || ""}
               isOnline={false}
               avatar={undefined}

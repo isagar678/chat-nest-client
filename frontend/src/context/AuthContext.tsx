@@ -9,6 +9,7 @@ interface AuthContextType {
   logout: () => void;
   loginWithGoogle: () => void;
   loading: boolean;
+  
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

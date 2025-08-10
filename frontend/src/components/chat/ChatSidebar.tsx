@@ -5,6 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Search, MessageCircle, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useMemo } from 'react';
+import { useApi } from '@/lib/useApi';
 
 interface FriendDetails {
   id: number;
@@ -15,6 +16,7 @@ interface FriendDetails {
 interface Friend {
   friendDetails: FriendDetails;
   messages: any[];
+  unreadCount?: number; // Add unread count
 }
 
 interface ChatSidebarProps {
@@ -26,18 +28,26 @@ interface ChatSidebarProps {
 
 export function ChatSidebar({ className, onChatSelect, selectedChatId, friends }: ChatSidebarProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const api = useApi();
 
-  const filteredFriends = useMemo(() => {
+  const filteredFriends = useMemo(async () => {
     if (!searchTerm.trim()) return friends;
     
     const term = searchTerm.toLowerCase();
-    return friends.filter(friend => 
+    const searchFreinds = friends.filter(friend => 
       friend.friendDetails.name.toLowerCase().includes(term) ||
       friend.friendDetails.userName.toLowerCase().includes(term) ||
       friend.messages.some(msg => 
         msg.content.toLowerCase().includes(term)
       )
     );
+
+    if (searchFreinds.length==0) {
+        const response =await api.get(`user/find/person?input=${searchTerm}`)
+        searchFreinds.push(response.data)
+    }
+
+    return searchFreinds
   }, [friends, searchTerm]);
 
   return (
@@ -53,7 +63,7 @@ export function ChatSidebar({ className, onChatSelect, selectedChatId, friends }
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search conversations..."
+            placeholder="Search by username..."
             className="pl-10 bg-background border-border"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -72,6 +82,7 @@ export function ChatSidebar({ className, onChatSelect, selectedChatId, friends }
             filteredFriends.map((friend, index) => {
             const lastMessage = friend.messages[friend.messages.length - 1];
             const lastMessageTime = lastMessage ? new Date(lastMessage.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+            const unreadCount = friend.unreadCount || 0;
             
             return (
               <div
@@ -88,18 +99,30 @@ export function ChatSidebar({ className, onChatSelect, selectedChatId, friends }
                       {friend.friendDetails.name.split(' ').map(n => n[0]).join('')}
                     </AvatarFallback>
                   </Avatar>
+                  {/* Unread message indicator */}
+                  {unreadCount > 0 && (
+                    <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-medium text-sm text-foreground truncate">
+                    <h3 className={cn(
+                      "font-medium text-sm truncate",
+                      unreadCount > 0 ? "text-foreground font-semibold" : "text-foreground"
+                    )}>
                       {friend.friendDetails.name}
                     </h3>
                     <span className="text-xs text-muted-foreground">
                       {lastMessageTime}
                     </span>
                   </div>
-                  <p className="text-sm text-muted-foreground truncate">
+                  <p className={cn(
+                    "text-sm truncate",
+                    unreadCount > 0 ? "text-foreground font-medium" : "text-muted-foreground"
+                  )}>
                     {lastMessage ? lastMessage.content : 'No messages yet'}
                   </p>
                 </div>

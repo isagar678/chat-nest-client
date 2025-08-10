@@ -1,13 +1,8 @@
-import React from 'react';
+
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 
-interface Message {
-  id: number;
-  content: string;
-  timestamp: string;
-  isSent: boolean;
-}
+import type { Message } from '@/types/chat';
 
 interface MessageBubbleProps {
   message: Message;
@@ -50,7 +45,7 @@ export function MessageBubble({ message, showAvatar = true, className }: Message
           isSent ? "flex-row-reverse" : ""
         )}>
           <span className="text-xs text-muted-foreground">
-            {new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {timestamp ? new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
           </span>
         </div>
       </div>

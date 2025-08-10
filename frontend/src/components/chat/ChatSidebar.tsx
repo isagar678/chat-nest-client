@@ -1,54 +1,50 @@
-import React from 'react';
+
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, MessageCircle, Users } from 'lucide-react';
+import { Search, MessageCircle, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useMemo } from 'react';
-import { useApi } from '@/lib/useApi';
 
-interface FriendDetails {
-  id: number;
-  name: string;
-  userName: string;
-}
+import { UserSearchModal } from './UserSearchModal';
 
-interface Friend {
-  friendDetails: FriendDetails;
-  messages: any[];
-  unreadCount?: number; // Add unread count
-}
+import type { Friend, SearchedUser } from '@/types/chat';
 
 interface ChatSidebarProps {
   className?: string;
   onChatSelect?: (friendIndex: number) => void;
   selectedChatId?: number;
   friends: Friend[];
+  onSendMessageToNewUser?: (userId: number, message: string, userDetails: SearchedUser) => Promise<void>;
 }
 
-export function ChatSidebar({ className, onChatSelect, selectedChatId, friends }: ChatSidebarProps) {
+export function ChatSidebar({ className, onChatSelect, selectedChatId, friends, onSendMessageToNewUser }: ChatSidebarProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const api = useApi();
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
-  const filteredFriends = useMemo(async () => {
+  const filteredFriends = useMemo(() => {
     if (!searchTerm.trim()) return friends;
     
     const term = searchTerm.toLowerCase();
-    const searchFreinds = friends.filter(friend => 
+    return friends.filter(friend => 
       friend.friendDetails.name.toLowerCase().includes(term) ||
       friend.friendDetails.userName.toLowerCase().includes(term) ||
       friend.messages.some(msg => 
         msg.content.toLowerCase().includes(term)
       )
     );
-
-    if (searchFreinds.length==0) {
-        const response =await api.get(`user/find/person?input=${searchTerm}`)
-        searchFreinds.push(response.data)
-    }
-
-    return searchFreinds
   }, [friends, searchTerm]);
+
+  const handleSearchNewUsers = () => {
+    setIsSearchModalOpen(true);
+  };
+
+  const handleSendMessageToNewUser = async (userId: number, message: string, userDetails: SearchedUser) => {
+    if (onSendMessageToNewUser) {
+      await onSendMessageToNewUser(userId, message, userDetails);
+    }
+  };
 
   return (
     <div className={cn("w-80 bg-card border-r border-border flex flex-col h-full", className)}>
@@ -60,14 +56,25 @@ export function ChatSidebar({ className, onChatSelect, selectedChatId, friends }
         </div>
         
         {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by username..."
-            className="pl-10 bg-background border-border"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="space-y-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search conversations..."
+              className="pl-10 bg-background border-border"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          
+          <Button 
+            variant="outline" 
+            className="w-full flex items-center gap-2"
+            onClick={handleSearchNewUsers}
+          >
+            <UserPlus className="h-4 w-4" />
+            Find New Users
+          </Button>
         </div>
       </div>
 
@@ -81,7 +88,7 @@ export function ChatSidebar({ className, onChatSelect, selectedChatId, friends }
           ) : (
             filteredFriends.map((friend, index) => {
             const lastMessage = friend.messages[friend.messages.length - 1];
-            const lastMessageTime = lastMessage ? new Date(lastMessage.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+            const lastMessageTime = lastMessage && lastMessage.timestamp ? new Date(lastMessage.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
             const unreadCount = friend.unreadCount || 0;
             
             return (
@@ -99,6 +106,12 @@ export function ChatSidebar({ className, onChatSelect, selectedChatId, friends }
                       {friend.friendDetails.name.split(' ').map(n => n[0]).join('')}
                     </AvatarFallback>
                   </Avatar>
+                  
+                  {/* Online indicator */}
+                  {friend.isOnline && (
+                    <div className="absolute -bottom-0 -right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+                  )}
+                  
                   {/* Unread message indicator */}
                   {unreadCount > 0 && (
                     <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
@@ -132,6 +145,13 @@ export function ChatSidebar({ className, onChatSelect, selectedChatId, friends }
           )}
         </div>
       </ScrollArea>
+
+      {/* User Search Modal */}
+      <UserSearchModal
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+        onSendMessage={handleSendMessageToNewUser}
+      />
     </div>
   );
 }

@@ -1,14 +1,10 @@
 import { useRef, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { MessageBubble } from './MessageBubble';
 import { cn } from '@/lib/utils';
 
-interface Message {
-    id: number;
-    content: string;
-    timestamp: string;
-    isSent: boolean;
-}
+import type { Message } from '@/types/chat';
 
 interface ChatAreaProps {
     messages: Message[];
@@ -53,13 +49,22 @@ export function ChatArea({ messages, isTyping, className }: ChatAreaProps) {
                 
                 {/* Typing indicator */}
                 {isTyping && (
-                    <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                        <div className="flex space-x-1">
-                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
-                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="flex items-center gap-3 max-w-[70%]">
+                        <Avatar className="h-8 w-8 flex-shrink-0">
+                            <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
+                                U
+                            </AvatarFallback>
+                        </Avatar>
+                        <div className="bg-chat-bubble-received text-chat-bubble-received-foreground px-4 py-3 rounded-2xl rounded-bl-md">
+                            <div className="flex items-center gap-2">
+                                <div className="flex space-x-1">
+                                    <div className="w-2 h-2 bg-current rounded-full animate-bounce opacity-60"></div>
+                                    <div className="w-2 h-2 bg-current rounded-full animate-bounce opacity-60" style={{ animationDelay: '0.15s' }}></div>
+                                    <div className="w-2 h-2 bg-current rounded-full animate-bounce opacity-60" style={{ animationDelay: '0.3s' }}></div>
+                                </div>
+                                <span className="text-xs opacity-60">typing</span>
+                            </div>
                         </div>
-                        <span>typing...</span>
                     </div>
                 )}
             </div>

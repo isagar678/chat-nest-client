@@ -9,45 +9,24 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { useApi } from '@/lib/useApi';
 import { SocketContext } from '@/context/WebSocketContext';
-import { eventHandlers } from '@/lib/eventHandlers';
-import { useSocketEvents } from '@/lib/useSocketEvents';
+
 import { useToast } from '@/hooks/use-toast';
 import { playNotificationSound } from '@/lib/utils';
 
-interface Message {
-  id?: number;
-  content: string;
-  timestamp?: string;
-  isSent: boolean;
-}
-
-interface FriendDetails {
-  id: number;
-  name: string;
-  userName: string;
-}
-
-interface Friend {
-  friendDetails: FriendDetails;
-  messages: Message[];
-}
-
-interface AllChats {
-  friends: Friend[];
-}
+import type { Message, Friend, AllChats, SearchedUser } from '@/types/chat';
 
 const initialChats: AllChats = {
   friends: [
     {
       friendDetails: {
         id: 1,
-        name: 'Sarah Johnson',
-        userName: 'sarah',
+        name: 'Loading...',
+        userName: 'Loading...',
       },
       messages: [
         {
           id: 1,
-          content: 'Hey! How are you doing today?',
+          content: 'Loading...',
           timestamp: '2025-01-08T10:30:00.000Z',
           isSent: false,
         }
@@ -61,8 +40,9 @@ export function ChatApp() {
   const [selectedFriend, setSelectedFriend] = useState<any>(initialChats.friends[0].friendDetails);
   const [allChats, setAllChats] = useState(initialChats);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
+
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
+  const [onlineUsers, setOnlineUsers] = useState<Set<number>>(new Set());
   const isMobile = useIsMobile();
   const { toast } = useToast();
 
@@ -89,6 +69,7 @@ export function ChatApp() {
             content: data.message,
             timestamp: new Date().toISOString(),
             isSent: false,
+            isRead: selectedFriendIndex === chatIndex, // Mark as read if currently viewing this chat
           };
           
           updatedFriends[chatIndex] = {
@@ -136,6 +117,27 @@ export function ChatApp() {
       });
     };
 
+    const handleOnlineStatusUpdate = (data: any) => {
+      console.log('User status update:', data);
+      setOnlineUsers(prev => {
+        const newSet = new Set(prev);
+        if (data.isOnline) {
+          newSet.add(data.userId);
+        } else {
+          newSet.delete(data.userId);
+        }
+        return newSet;
+      });
+    };
+
+    const handleInitialFriendsStatus = (friendsStatus: any[]) => {
+      console.log('Initial friends status:', friendsStatus);
+      const onlineFriendIds = new Set(
+        friendsStatus.filter(friend => friend.isOnline).map(friend => friend.id)
+      );
+      setOnlineUsers(onlineFriendIds);
+    };
+
     const handleTypingStart = (data: any) => {
       if (data.from !== selectedFriend?.id) return;
       setTypingUsers(prev => new Set(prev).add(data.from));
@@ -153,11 +155,15 @@ export function ChatApp() {
     socket.on('privateMessageReceived', handlePrivateMessage);
     socket.on('typingStart', handleTypingStart);
     socket.on('typingStop', handleTypingStop);
+    socket.on('userStatusChange', handleOnlineStatusUpdate);
+    socket.on('initialFriendsStatus', handleInitialFriendsStatus);
   
     return () => {
       socket.off('privateMessageReceived', handlePrivateMessage);
       socket.off('typingStart', handleTypingStart);
       socket.off('typingStop', handleTypingStop);
+      socket.off('userStatusChange', handleOnlineStatusUpdate);
+      socket.off('initialFriendsStatus', handleInitialFriendsStatus);
     };
   }, [socket, selectedFriendIndex, toast, selectedFriend, api]);
 
@@ -182,12 +188,13 @@ export function ChatApp() {
   const currentFriend = allChats.friends[selectedFriendIndex];
   const messages = currentFriend?.messages || [];
 
-  // Calculate unread counts for each friend
+  // Calculate unread counts for each friend and add online status
   const friendsWithUnreadCounts = allChats.friends.map(friend => {
     const unreadCount = friend.messages.filter(msg => !msg.isSent && !msg.isRead).length;
     return {
       ...friend,
-      unreadCount
+      unreadCount,
+      isOnline: onlineUsers.has(friend.friendDetails.id)
     };
   });
 
@@ -236,7 +243,7 @@ export function ChatApp() {
     }
   };
 
-  const handleChatSelect =async (friendIndex: number) => {
+  const handleChatSelect = async (friendIndex: number) => {
     setSelectedFriendIndex(friendIndex);
     setSelectedFriend(allChats.friends[friendIndex].friendDetails)
 
@@ -245,12 +252,94 @@ export function ChatApp() {
       await api.put('/user/mark/read', {
         from: allChats.friends[friendIndex].friendDetails.id
       });
+      
+      // Update local state to mark messages as read
+      setAllChats(prev => ({
+        ...prev,
+        friends: prev.friends.map((friend, index) =>
+          index === friendIndex
+            ? {
+                ...friend,
+                messages: friend.messages.map(msg => ({
+                  ...msg,
+                  isRead: true
+                }))
+              }
+            : friend
+        )
+      }));
     } catch (error) {
       console.error('Failed to mark messages as read:', error);
     }
 
     if (isMobile) {
       setIsSidebarOpen(false);
+    }
+  };
+
+  const handleSendMessageToNewUser = async (userId: number, message: string, userDetails: SearchedUser) => {
+    try {
+      if (!socket) {
+        throw new Error('No socket connection');
+      }
+
+      // Send the message via socket
+      socket.emit('privateMessage', {
+        recipientId: userId.toString(),
+        message: message
+      });
+
+      // Create a new friend entry in local state
+      const newFriend: Friend = {
+        friendDetails: {
+          id: userDetails.id,
+          name: userDetails.name,
+          userName: userDetails.userName
+        },
+        messages: [
+          {
+            id: Date.now(),
+            content: message,
+            timestamp: new Date().toISOString(),
+            isSent: true,
+          }
+        ]
+      };
+
+      // Check if this user is already in our friends list
+      const existingFriendIndex = allChats.friends.findIndex(
+        friend => friend.friendDetails.id === userId
+      );
+
+      if (existingFriendIndex !== -1) {
+        // User already exists, just add the message
+        setAllChats(prev => ({
+          ...prev,
+          friends: prev.friends.map((friend, index) =>
+            index === existingFriendIndex
+              ? { ...friend, messages: [...friend.messages, newFriend.messages[0]] }
+              : friend
+          )
+        }));
+        setSelectedFriendIndex(existingFriendIndex);
+        setSelectedFriend(allChats.friends[existingFriendIndex].friendDetails);
+      } else {
+        // New user, add to friends list
+        setAllChats(prev => ({
+          ...prev,
+          friends: [newFriend, ...prev.friends]
+        }));
+        setSelectedFriendIndex(0);
+        setSelectedFriend(newFriend.friendDetails);
+      }
+
+      if (isMobile) {
+        setIsSidebarOpen(false);
+      }
+
+    } catch (error) {
+      console.error('Error sending message to new user:', error);
+      throw error; // Re-throw to let the modal handle the error
     }
   };
 
@@ -274,6 +363,7 @@ export function ChatApp() {
           onChatSelect={handleChatSelect}
           selectedChatId={selectedFriendIndex}
           friends={friendsWithUnreadCounts}
+          onSendMessageToNewUser={handleSendMessageToNewUser}
         />
       </div>
 
@@ -298,7 +388,7 @@ export function ChatApp() {
           <>
             <ChatHeader
               chatName={currentFriend?.friendDetails.name || ""}
-              isOnline={false}
+              isOnline={onlineUsers.has(currentFriend?.friendDetails.id)}
               avatar={undefined}
             />
             <ChatArea messages={messages} isTyping={typingUsers.has(selectedFriend?.id)} />

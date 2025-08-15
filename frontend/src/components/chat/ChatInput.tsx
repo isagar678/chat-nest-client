@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, Paperclip, Smile, Mic } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Picker from 'emoji-picker-react';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -19,6 +20,12 @@ export function ChatInput({
 }: ChatInputProps) {
   const [message, setMessage] = useState('');
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
+  
+  const handleEmojiClick = (emojiObject: any) => {
+    setMessage(prevMessage => prevMessage + emojiObject.emoji);
+  };
 
   const handleSend = () => {
     if (message.trim()) {
@@ -82,6 +89,26 @@ export function ChatInput({
     };
   }, [typingTimeout]);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(event.target as Node) &&
+        (event.target as HTMLElement).tagName !== 'BUTTON' // This line prevents the button click from closing the picker immediately
+      ) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    if (showEmojiPicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showEmojiPicker]);
+
   return (
     <div className={cn("p-4 border-t border-border bg-background", className)}>
       <div className="flex items-end gap-3">
@@ -100,13 +127,18 @@ export function ChatInput({
           />
           
           <div className="absolute right-2 bottom-2 flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Button variant="ghost" size="icon" className="h-8 w-8"  onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
               <Smile className="h-4 w-4" />
             </Button>
             <Button variant="ghost" size="icon" className="h-8 w-8">
               <Mic className="h-4 w-4" />
             </Button>
           </div>
+          {showEmojiPicker && (
+            <div className="absolute bottom-12 right-0 z-10" ref={emojiPickerRef}>
+              <Picker onEmojiClick={handleEmojiClick} />
+            </div>
+          )}
         </div>
 
         <Button 

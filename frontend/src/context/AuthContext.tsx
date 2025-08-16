@@ -23,7 +23,7 @@ const api = axios.create({
   withCredentials: true, // send cookies (for refresh token)
 });
 
-const AuthProvider = ({ children }) => {
+const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<any>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -130,6 +130,21 @@ const AuthProvider = ({ children }) => {
     let mounted = true;
     
     (async () => {
+      // Check for access token in URL parameters first (for Google OAuth)
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlAccessToken = urlParams.get('access_token');
+      
+      if (urlAccessToken) {
+        console.log('Found access token in URL parameters:', urlAccessToken);
+        setAccessToken(urlAccessToken);
+        api.defaults.headers.common['Authorization'] = `Bearer ${urlAccessToken}`;
+        await fetchUserData(urlAccessToken);
+        
+        // Clear the URL parameter
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+        return;
+      }
       
       // If we already have an access token, just fetch user data
       if (accessToken) {
@@ -137,7 +152,7 @@ const AuthProvider = ({ children }) => {
         return;
       }
       
-      
+      // Try to get a new token using refresh token
       try {
         const response = await api.post('/auth/token', {});
         const { access_token } = response.data;
@@ -202,7 +217,7 @@ const AuthProvider = ({ children }) => {
   const logout = () => {
     setAccessToken(null);
     setUser(null);
-    // Optionally, call a logout endpoint to clear refresh token cookie
+    // Call logout endpoint to clear refresh token cookie
     api.post('/auth/logout').catch(() => {});
   };
 

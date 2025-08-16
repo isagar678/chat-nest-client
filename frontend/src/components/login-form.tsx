@@ -12,10 +12,6 @@ import { Label } from "@/components/ui/label"
 import { useState, useContext } from "react"
 import AuthContext from "../context/AuthContext";
 
-const googleLogin = () => {
-  window.location.href = 'http://localhost:3000/auth/google';
-};
-
 export function LoginForm({
   className,
   ...props
@@ -25,7 +21,7 @@ export function LoginForm({
     username: "",
     password: ""
   })
-  const { login } = useContext(AuthContext);
+  const { login, loginWithGoogle } = useContext(AuthContext);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,6 +37,9 @@ export function LoginForm({
     }
   }
 
+  const handleGoogleLogin = () => {
+    loginWithGoogle();
+  };
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -92,7 +91,7 @@ export function LoginForm({
                 <Button type="submit" className="w-full">
                   Login
                 </Button>
-                <Button type="button" variant="outline" className="w-full" onClick={googleLogin}>
+                <Button type="button" variant="outline" className="w-full" onClick={handleGoogleLogin}>
                   Login with Google
                 </Button>
               </div>

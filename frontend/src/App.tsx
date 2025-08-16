@@ -3,15 +3,17 @@ import { LoginForm } from "./components/login-form"
 import { RegisterForm } from "./components/register-form"
 import {Dashboard} from "./components/Dashboard";
 import Chats from "./components/MessageBoard";
-import { useContext } from "react";
+import { useContext, useEffect } from "react";
 import AuthContext from "./context/AuthContext";
 import { ChatApp } from "./components/chat/ChatApp";
 
 function App() {
 
-  const {accessToken, loading} = useContext(AuthContext)
+  const auth = useContext(AuthContext)
+  const accessToken = auth?.accessToken
+  const loading = auth?.loading
   
-  const ProtectedRoute = ({ children }) => {
+  const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     
     if (loading) {
       return <div>Loading...</div>;
@@ -23,6 +25,29 @@ function App() {
     }
     
     return children;
+  };
+
+  // Google OAuth Callback Handler
+  const GoogleCallback = () => {
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        // If still on this page after 2 seconds, redirect to login
+        if (window.location.pathname === '/api') {
+          window.location.href = '/login';
+        }
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }, []);
+    
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-lg">Processing Google login...</p>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -48,6 +73,7 @@ function App() {
         <Route path="/chats" element={<ProtectedRoute>
             <ChatApp/>
           </ProtectedRoute>} />
+        <Route path="/api" element={<GoogleCallback />} />
       </Routes>
     </BrowserRouter>
   )

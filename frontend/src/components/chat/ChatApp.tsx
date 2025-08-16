@@ -84,7 +84,8 @@ export function ChatApp() {
           // Show notification if message is not from currently selected friend
           if (selectedFriendIndex !== chatIndex) {
             const senderName = data.fromName || `User ${data.from}`;
-            const messagePreview = data.fileName ? `📎 ${data.fileName}` : data.message;
+            const isVoiceMessage = data.fileName?.includes('voice-message') || data.fileType?.startsWith('audio/');
+            const messagePreview = isVoiceMessage ? '🎤 Voice Message' : (data.fileName ? `📎 ${data.fileName}` : data.message);
             toast({
               title: `New message from ${senderName}`,
               description: messagePreview,
@@ -109,7 +110,8 @@ export function ChatApp() {
         } else {
           // If no existing chat, show notification and log
           const senderName = data.fromName || `User ${data.from}`;
-          const messagePreview = data.fileName ? `📎 ${data.fileName}` : data.message;
+          const isVoiceMessage = data.fileName?.includes('voice-message') || data.fileType?.startsWith('audio/');
+          const messagePreview = isVoiceMessage ? '🎤 Voice Message' : (data.fileName ? `📎 ${data.fileName}` : data.message);
           toast({
             title: `New message from ${senderName}`,
             description: messagePreview,
@@ -227,9 +229,10 @@ export function ChatApp() {
         uploadedFileSize = response.data.fileSize;
       } catch (error) {
         console.error('File upload failed:', error);
+        const isVoiceMessage = file.name.includes('voice-message');
         toast({
-          title: 'Upload Failed',
-          description: 'Could not upload your file. Please try again.',
+          title: isVoiceMessage ? 'Voice Upload Failed' : 'Upload Failed',
+          description: isVoiceMessage ? 'Could not upload your voice message. Please try again.' : 'Could not upload your file. Please try again.',
           variant: 'destructive',
         });
         setIsUploading(false)
@@ -438,9 +441,10 @@ export function ChatApp() {
               avatar={undefined}
             />
             <ChatArea messages={messages} isTyping={typingUsers.has(selectedFriend?.id)} />
-            <ChatInput onSendMessage={handleSendMessage} 
-            onTyping={handleTyping} placeholder={isUploading ? 'Uploading file...' : `Message ${selectedFriend.name}`} 
-            className={isUploading ? 'opacity-50 pointer-events-none' : ''}
+            <ChatInput 
+              onSendMessage={handleSendMessage} 
+              onTyping={handleTyping}
+              isUploading={isUploading}
             />
           </>
         ) : (

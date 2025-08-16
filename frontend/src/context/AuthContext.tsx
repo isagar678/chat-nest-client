@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect, useCallback, useRef } from "react";
 import axios from 'axios';
+import { supabase } from "@/lib/supabase.client";
 
 interface AuthContextType {
   user: any;
@@ -168,6 +169,12 @@ const AuthProvider = ({ children }) => {
     const { access_token } = response.data;
     setAccessToken(access_token);
     api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+
+    supabase.auth.setSession({
+      access_token: access_token,
+      refresh_token: '',
+    });
+
     await fetchUserData(access_token);
   };
 
@@ -177,6 +184,12 @@ const AuthProvider = ({ children }) => {
     const { access_token } = response.data;
     setAccessToken(access_token);
     api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+
+    supabase.auth.setSession({
+      access_token: access_token,
+      refresh_token: '',
+    });
+    
     await fetchUserData(access_token);
   };
 

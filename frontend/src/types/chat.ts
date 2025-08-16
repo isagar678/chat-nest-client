@@ -4,6 +4,8 @@ export interface Message {
   timestamp?: string;
   isSent: boolean;
   isRead?: boolean;
+  filePath?:string;
+  fileType?:string;
 }
 
 export interface FriendDetails {

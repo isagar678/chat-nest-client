@@ -40,7 +40,7 @@ export function ChatApp() {
   const [selectedFriend, setSelectedFriend] = useState<any>(initialChats.friends[0].friendDetails);
   const [allChats, setAllChats] = useState(initialChats);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
+  const [isUploading, setIsUploading] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const [onlineUsers, setOnlineUsers] = useState<Set<number>>(new Set());
   const isMobile = useIsMobile();
@@ -51,16 +51,16 @@ export function ChatApp() {
 
   useEffect(() => {
     if (!socket) return;
-  
+
     const handlePrivateMessage = async (data: any) => {
       console.log('Received private message:', data);
-      
+
       setAllChats(prevChats => {
         // Check if we already have a chat with this user
         const chatIndex = prevChats.friends.findIndex(
           chat => chat.friendDetails.id === parseInt(data.from)
         );
-  
+
         if (chatIndex !== -1) {
           // Update existing chat
           const updatedFriends = [...prevChats.friends];
@@ -71,12 +71,12 @@ export function ChatApp() {
             isSent: false,
             isRead: selectedFriendIndex === chatIndex, // Mark as read if currently viewing this chat
           };
-          
+
           updatedFriends[chatIndex] = {
             ...updatedFriends[chatIndex],
             messages: [...updatedFriends[chatIndex].messages, newMessage]
           };
-          
+
           // Show notification if message is not from currently selected friend
           if (selectedFriendIndex !== chatIndex) {
             const senderName = data.fromName || `User ${data.from}`;
@@ -96,7 +96,7 @@ export function ChatApp() {
               console.error('Failed to mark message as read:', error);
             }
           }
-          
+
           return {
             ...prevChats,
             friends: updatedFriends
@@ -112,7 +112,7 @@ export function ChatApp() {
           playNotificationSound();
           console.log('Message from unknown user:', data);
         }
-        
+
         return prevChats;
       });
     };
@@ -151,13 +151,13 @@ export function ChatApp() {
         return newSet;
       });
     };
-  
+
     socket.on('privateMessageReceived', handlePrivateMessage);
     socket.on('typingStart', handleTypingStart);
     socket.on('typingStop', handleTypingStop);
     socket.on('userStatusChange', handleOnlineStatusUpdate);
     socket.on('initialFriendsStatus', handleInitialFriendsStatus);
-  
+
     return () => {
       socket.off('privateMessageReceived', handlePrivateMessage);
       socket.off('typingStart', handleTypingStart);
@@ -182,9 +182,6 @@ export function ChatApp() {
     fetchUsers();
   }, [api]);
 
-
-
-
   const currentFriend = allChats.friends[selectedFriendIndex];
   const messages = currentFriend?.messages || [];
 
@@ -198,8 +195,37 @@ export function ChatApp() {
     };
   });
 
-  const handleSendMessage = (content: string) => {
-    if (selectedFriendIndex === null || !content.trim()) return;
+  const handleSendMessage = async (content: string, file?: File) => {
+    if (selectedFriendIndex === null || (!content.trim() && !file)) return;
+
+    let uploadedFilePath: string | undefined;
+    let uploadedFileType: string | undefined;
+
+    if (file) {
+      setIsUploading(true);
+      const formData = new FormData();
+      formData.append('file', file);
+      // Make sure your `selectedFriend` object has the `supabaseAuthId`
+      formData.append('recipientId', selectedFriend.supabaseAuthId);
+
+      try {
+        // Use your API instance to make an authenticated request
+        const response = await api.post('/user/upload', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        uploadedFilePath = response.data.filePath;
+        uploadedFileType = response.data.fileType;
+      } catch (error) {
+        console.error('File upload failed:', error);
+        toast({
+          title: 'Upload Failed',
+          description: 'Could not upload your file. Please try again.',
+          variant: 'destructive',
+        });
+        setIsUploading(false)
+        return;
+      }
+    }
 
     if (socket) {
       console.log('Sending message to:', selectedFriend);
@@ -207,7 +233,9 @@ export function ChatApp() {
       // Emit the message to the backend
       socket.emit('privateMessage', {
         recipientId: selectedFriend.id,
-        message: content.trim()
+        message: content.trim(),
+        filePath: uploadedFilePath,
+        fileType: uploadedFileType,
       });
 
       // Stop typing indicator
@@ -219,6 +247,8 @@ export function ChatApp() {
         content: content.trim(),
         timestamp: new Date().toISOString(),
         isSent: true,
+        filePath: uploadedFilePath, // Add file path
+        fileType: uploadedFileType, // Add file type
       };
 
       // Update local state immediately for optimistic UI
@@ -235,7 +265,7 @@ export function ChatApp() {
 
   const handleTyping = (isUserTyping: boolean) => {
     if (!socket || !selectedFriend) return;
-    
+
     if (isUserTyping) {
       socket.emit('typingStart', { to: selectedFriend.id });
     } else {
@@ -252,19 +282,19 @@ export function ChatApp() {
       await api.put('/user/mark/read', {
         from: allChats.friends[friendIndex].friendDetails.id
       });
-      
+
       // Update local state to mark messages as read
       setAllChats(prev => ({
         ...prev,
         friends: prev.friends.map((friend, index) =>
           index === friendIndex
             ? {
-                ...friend,
-                messages: friend.messages.map(msg => ({
-                  ...msg,
-                  isRead: true
-                }))
-              }
+              ...friend,
+              messages: friend.messages.map(msg => ({
+                ...msg,
+                isRead: true
+              }))
+            }
             : friend
         )
       }));
@@ -392,7 +422,10 @@ export function ChatApp() {
               avatar={undefined}
             />
             <ChatArea messages={messages} isTyping={typingUsers.has(selectedFriend?.id)} />
-            <ChatInput onSendMessage={handleSendMessage} onTyping={handleTyping} />
+            <ChatInput onSendMessage={handleSendMessage} 
+            onTyping={handleTyping} placeholder={isUploading ? 'Uploading file...' : `Message ${selectedFriend.name}`} 
+            className={isUploading ? 'opacity-50 pointer-events-none' : ''}
+            />
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center">

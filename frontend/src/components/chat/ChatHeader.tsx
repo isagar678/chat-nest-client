@@ -1,7 +1,9 @@
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Phone, Video, MoreVertical, Search } from 'lucide-react';
+import { LogOut } from 'lucide-react';
+import { useContext } from 'react';
+import AuthContext from '@/context/AuthContext';
 
 interface ChatHeaderProps {
   chatName: string;
@@ -11,6 +13,14 @@ interface ChatHeaderProps {
 }
 
 export function ChatHeader({ chatName, isOnline, avatar, lastSeen }: ChatHeaderProps) {
+  const auth = useContext(AuthContext);
+
+  const handleLogout = () => {
+    if (auth?.logout) {
+      auth.logout();
+    }
+  };
+
   return (
     <div className="flex items-center justify-between p-4 border-b border-border bg-card">
       <div className="flex items-center gap-3">
@@ -35,17 +45,14 @@ export function ChatHeader({ chatName, isOnline, avatar, lastSeen }: ChatHeaderP
       </div>
 
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" className="h-9 w-9">
-          <Search className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="icon" className="h-9 w-9">
-          <Phone className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="icon" className="h-9 w-9">
-          <Video className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="icon" className="h-9 w-9">
-          <MoreVertical className="h-4 w-4" />
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-9 w-9"
+          onClick={handleLogout}
+          title="Logout"
+        >
+          <LogOut className="h-4 w-4" />
         </Button>
       </div>
     </div>

@@ -70,6 +70,10 @@ export function ChatApp() {
             timestamp: new Date().toISOString(),
             isSent: false,
             isRead: selectedFriendIndex === chatIndex, // Mark as read if currently viewing this chat
+            filePath: data.filePath,
+            fileName: data.fileName,
+            fileSize: data.fileSize,
+            mimeType: data.fileType,
           };
 
           updatedFriends[chatIndex] = {
@@ -80,9 +84,10 @@ export function ChatApp() {
           // Show notification if message is not from currently selected friend
           if (selectedFriendIndex !== chatIndex) {
             const senderName = data.fromName || `User ${data.from}`;
+            const messagePreview = data.fileName ? `📎 ${data.fileName}` : data.message;
             toast({
               title: `New message from ${senderName}`,
-              description: data.message,
+              description: messagePreview,
               duration: 5000,
             });
             playNotificationSound();
@@ -104,9 +109,10 @@ export function ChatApp() {
         } else {
           // If no existing chat, show notification and log
           const senderName = data.fromName || `User ${data.from}`;
+          const messagePreview = data.fileName ? `📎 ${data.fileName}` : data.message;
           toast({
             title: `New message from ${senderName}`,
-            description: data.message,
+            description: messagePreview,
             duration: 5000,
           });
           playNotificationSound();
@@ -200,6 +206,8 @@ export function ChatApp() {
 
     let uploadedFilePath: string | undefined;
     let uploadedFileType: string | undefined;
+    let uploadedFileName: string | undefined;
+    let uploadedFileSize: number | undefined;
 
     if (file) {
       setIsUploading(true);
@@ -215,6 +223,8 @@ export function ChatApp() {
         });
         uploadedFilePath = response.data.filePath;
         uploadedFileType = response.data.fileType;
+        uploadedFileName = response.data.fileName;
+        uploadedFileSize = response.data.fileSize;
       } catch (error) {
         console.error('File upload failed:', error);
         toast({
@@ -235,6 +245,8 @@ export function ChatApp() {
         recipientId: selectedFriend.id,
         message: content.trim(),
         filePath: uploadedFilePath,
+        fileName: uploadedFileName,
+        fileSize: uploadedFileSize,
         fileType: uploadedFileType,
       });
 
@@ -247,8 +259,10 @@ export function ChatApp() {
         content: content.trim(),
         timestamp: new Date().toISOString(),
         isSent: true,
-        filePath: uploadedFilePath, // Add file path
-        fileType: uploadedFileType, // Add file type
+        filePath: uploadedFilePath,
+        fileName: uploadedFileName,
+        fileSize: uploadedFileSize,
+        mimeType: uploadedFileType,
       };
 
       // Update local state immediately for optimistic UI
@@ -261,6 +275,8 @@ export function ChatApp() {
         )
       }));
     }
+
+    setIsUploading(false);
   };
 
   const handleTyping = (isUserTyping: boolean) => {

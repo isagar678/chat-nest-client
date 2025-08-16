@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import Picker from 'emoji-picker-react';
 
 interface ChatInputProps {
-  onSendMessage: (message: string) => void;
+  onSendMessage: (message: string, file?: File) => void;
   onTyping?: (isTyping: boolean) => void;
   className?: string;
   placeholder?: string;
@@ -47,30 +47,31 @@ export function ChatInput({
   }, [file]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('File input change event:', e.target.files);
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+      const selectedFile = e.target.files[0];
+      console.log('Selected file:', selectedFile.name, selectedFile.type, selectedFile.size);
+      setFile(selectedFile);
     }
   };
 
   const handleSend = () => {
     if (!message.trim() && !file) return;
 
-    if (message.trim()) {
-      onSendMessage(message.trim(), file || undefined);
-      setMessage('');
-      setFile(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''; // Reset the file input
-      };
-      // Stop typing indicator when sending
-      if (onTyping) {
-        onTyping(false);
-      }
-      // Clear typing timeout
-      if (typingTimeout) {
-        clearTimeout(typingTimeout);
-        setTypingTimeout(null);
-      }
+    onSendMessage(message.trim(), file || undefined);
+    setMessage('');
+    setFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''; // Reset the file input
+    };
+    // Stop typing indicator when sending
+    if (onTyping) {
+      onTyping(false);
+    }
+    // Clear typing timeout
+    if (typingTimeout) {
+      clearTimeout(typingTimeout);
+      setTypingTimeout(null);
     }
   };
 
@@ -169,12 +170,22 @@ export function ChatInput({
       )}
       <div className="flex items-end gap-3">
       <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileSelect}
-          className="hidden"
-        />
-        <Button variant="ghost" size="icon" className="h-10 w-10 flex-shrink-0">
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileSelect}
+        accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt,.zip,.rar"
+        className="hidden"
+      />
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-10 w-10 flex-shrink-0"
+          onClick={() => {
+            console.log('Paperclip button clicked');
+            console.log('File input ref:', fileInputRef.current);
+            fileInputRef.current?.click();
+          }}
+        >
           <Paperclip className="h-5 w-5" />
         </Button>
 
@@ -205,7 +216,7 @@ export function ChatInput({
 
         <Button
           onClick={handleSend}
-          disabled={!message.trim()}
+          disabled={!message.trim() && !file}
           className="h-10 w-10 p-0 flex-shrink-0"
         >
           <Send className="h-4 w-4" />

@@ -4,8 +4,11 @@ export interface Message {
   timestamp?: string;
   isSent: boolean;
   isRead?: boolean;
-  filePath?:string;
-  fileType?:string;
+  filePath?: string;
+  fileName?: string;
+  fileSize?: number;
+  mimeType?: string;
+  fileUrl?: string;
 }
 
 export interface FriendDetails {

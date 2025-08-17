@@ -438,9 +438,9 @@ export function ChatApp() {
             <ChatHeader
               chatName={currentFriend?.friendDetails.name || ""}
               isOnline={onlineUsers.has(currentFriend?.friendDetails.id)}
-              avatar={undefined}
+              avatar={currentFriend?.friendDetails.avatar}
             />
-            <ChatArea messages={messages} isTyping={typingUsers.has(selectedFriend?.id)} />
+            <ChatArea messages={messages} isTyping={typingUsers.has(selectedFriend?.id)} currentFriend={currentFriend} />
             <ChatInput 
               onSendMessage={handleSendMessage} 
               onTyping={handleTyping}

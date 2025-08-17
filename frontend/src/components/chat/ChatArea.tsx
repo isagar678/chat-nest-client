@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { SmartAvatar } from '@/components/ui/smart-avatar';
 import { MessageBubble } from './MessageBubble';
 import { cn } from '@/lib/utils';
 
@@ -10,9 +10,17 @@ interface ChatAreaProps {
     messages: Message[];
     isTyping?: boolean;
     className?: string;
+    currentFriend?: {
+        friendDetails: {
+            id: number;
+            name: string;
+            userName: string;
+            avatar?: string;
+        };
+    };
 }
 
-export function ChatArea({ messages, isTyping, className }: ChatAreaProps) {
+export function ChatArea({ messages, isTyping, className, currentFriend }: ChatAreaProps) {
     const scrollAreaRef = useRef<HTMLDivElement>(null);
 
     // Auto-scroll to bottom when new messages arrive
@@ -30,7 +38,7 @@ export function ChatArea({ messages, isTyping, className }: ChatAreaProps) {
         if (index === 0) return true;
 
         const previousMessage = messages[index - 1];
-        return !previousMessage.isSent || previousMessage.isSent !== currentMessage.isSent;
+        return previousMessage.isSent !== currentMessage.isSent;
     };
 
     return (
@@ -44,17 +52,21 @@ export function ChatArea({ messages, isTyping, className }: ChatAreaProps) {
                         key={message.id}
                         message={message}
                         showAvatar={shouldShowAvatar(message, index)}
+                        senderAvatar={!message.isSent ? currentFriend?.friendDetails.avatar : undefined}
+                        senderName={!message.isSent ? currentFriend?.friendDetails.name : undefined}
                     />
                 ))}
                 
                 {/* Typing indicator */}
                 {isTyping && (
                     <div className="flex items-center gap-3 max-w-[70%]">
-                        <Avatar className="h-8 w-8 flex-shrink-0">
-                            <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
-                                U
-                            </AvatarFallback>
-                        </Avatar>
+                        <SmartAvatar 
+                            src={currentFriend?.friendDetails.avatar} 
+                            alt={currentFriend?.friendDetails.name} 
+                            fallback={currentFriend?.friendDetails.name}
+                            size="sm"
+                            className="flex-shrink-0 bg-secondary text-secondary-foreground"
+                        />
                         <div className="bg-chat-bubble-received text-chat-bubble-received-foreground px-4 py-3 rounded-2xl rounded-bl-md">
                             <div className="flex items-center gap-2">
                                 <div className="flex space-x-1">

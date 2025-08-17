@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { SmartAvatar } from '@/components/ui/smart-avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { Search, Send, User, MessageCircle } from 'lucide-react';
@@ -212,11 +212,13 @@ export function UserSearchModal({
           <div className="space-y-4">
             {/* Selected User Info */}
             <div className="flex items-center gap-3 p-3 bg-accent/20 rounded-lg">
-              <Avatar className="h-10 w-10">
-                <AvatarFallback className="bg-primary text-primary-foreground">
-                  {selectedUser?.name.split(' ').map(n => n[0]).join('')}
-                </AvatarFallback>
-              </Avatar>
+              <SmartAvatar 
+                src={selectedUser?.avatar} 
+                alt={selectedUser?.name} 
+                fallback={selectedUser?.name}
+                size="md"
+                className="bg-primary text-primary-foreground"
+              />
               <div className="flex-1 min-w-0">
                 <h3 className="font-medium text-sm">{selectedUser?.name}</h3>
                 <p className="text-sm text-muted-foreground">@{selectedUser?.userName}</p>

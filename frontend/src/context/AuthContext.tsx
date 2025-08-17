@@ -10,7 +10,7 @@ interface AuthContextType {
   logout: () => void;
   loginWithGoogle: () => void;
   loading: boolean;
-  
+  refreshUserData: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -221,9 +221,14 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     api.post('/auth/logout').catch(() => {});
   };
 
+  // Refresh user data
+  const refreshUserData = async () => {
+    await fetchUserData();
+  };
+
   return (
     <AuthContext.Provider
-      value={{ user, accessToken, login, register, logout, loginWithGoogle, loading }}
+      value={{ user, accessToken, login, register, logout, loginWithGoogle, loading, refreshUserData }}
     >
       {children}
     </AuthContext.Provider>

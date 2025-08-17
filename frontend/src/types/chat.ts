@@ -15,6 +15,7 @@ export interface FriendDetails {
   id: number;
   name: string;
   userName: string;
+  avatar?: string;
 }
 
 export interface Friend {
@@ -32,5 +33,6 @@ export interface SearchedUser {
   id: number;
   name: string;
   userName: string;
+  avatar?: string;
 }
 

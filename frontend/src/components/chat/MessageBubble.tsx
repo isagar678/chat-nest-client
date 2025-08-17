@@ -1,5 +1,5 @@
 
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { SmartAvatar } from '@/components/ui/smart-avatar';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useApi } from '@/lib/useApi';
@@ -11,10 +11,14 @@ interface MessageBubbleProps {
   message: Message;
   showAvatar?: boolean;
   className?: string;
+  senderAvatar?: string;
+  senderName?: string;
 }
 
-export function MessageBubble({ message, showAvatar = true, className }: MessageBubbleProps) {
-  const { content, timestamp, isSent, filePath, fileName, fileSize, mimeType, fileUrl } = message;
+export function MessageBubble({ message, showAvatar = true, className, senderAvatar, senderName }: MessageBubbleProps) {
+  const { content, timestamp, isSent, filePath, fileName, fileSize, mimeType } = message;
+  
+
   const api = useApi();
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -96,11 +100,13 @@ export function MessageBubble({ message, showAvatar = true, className }: Message
       className
     )}>
       {showAvatar && !isSent && (
-        <Avatar className="h-8 w-8 flex-shrink-0">
-          <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
-            U
-          </AvatarFallback>
-        </Avatar>
+        <SmartAvatar 
+          src={senderAvatar} 
+          alt={senderName || 'User'} 
+          fallback={senderName}
+          size="sm"
+          className="flex-shrink-0"
+        />
       )}
 
       <div className={cn(

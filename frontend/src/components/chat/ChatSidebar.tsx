@@ -1,5 +1,5 @@
 
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { SmartAvatar } from '@/components/ui/smart-avatar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -101,11 +101,13 @@ export function ChatSidebar({ className, onChatSelect, selectedChatId, friends, 
                 )}
               >
                 <div className="relative">
-                  <Avatar className="h-12 w-12">
-                    <AvatarFallback className="bg-primary text-primary-foreground">
-                      {friend.friendDetails.name.split(' ').map(n => n[0]).join('')}
-                    </AvatarFallback>
-                  </Avatar>
+                  <SmartAvatar 
+                    src={friend.friendDetails.avatar} 
+                    alt={friend.friendDetails.name} 
+                    fallback={friend.friendDetails.name}
+                    size="lg"
+                    className="bg-primary text-primary-foreground"
+                  />
                   
                   {/* Online indicator */}
                   {friend.isOnline && (

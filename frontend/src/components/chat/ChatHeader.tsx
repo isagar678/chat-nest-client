@@ -1,9 +1,9 @@
-import React from 'react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { LogOut } from 'lucide-react';
 import { useContext } from 'react';
+import { SmartAvatar } from '@/components/ui/smart-avatar';
+import { Button } from '@/components/ui/button';
+import { LogOut, User } from 'lucide-react';
 import AuthContext from '@/context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 interface ChatHeaderProps {
   chatName: string;
@@ -14,6 +14,10 @@ interface ChatHeaderProps {
 
 export function ChatHeader({ chatName, isOnline, avatar, lastSeen }: ChatHeaderProps) {
   const auth = useContext(AuthContext);
+  const currentUser = auth?.user;
+  const navigate = useNavigate();
+
+
 
   const handleLogout = () => {
     if (auth?.logout) {
@@ -21,16 +25,21 @@ export function ChatHeader({ chatName, isOnline, avatar, lastSeen }: ChatHeaderP
     }
   };
 
+  const handleProfileClick = () => {
+    navigate('/profile');
+  };
+
   return (
     <div className="flex items-center justify-between p-4 border-b border-border bg-card">
       <div className="flex items-center gap-3">
         <div className="relative">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={avatar} alt={chatName} />
-            <AvatarFallback className="bg-primary text-primary-foreground">
-              {chatName.split(' ').map(n => n[0]).join('')}
-            </AvatarFallback>
-          </Avatar>
+          <SmartAvatar 
+            src={avatar} 
+            alt={chatName} 
+            fallback={chatName}
+            size="md"
+            className="bg-primary text-primary-foreground"
+          />
           {isOnline && (
             <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 border-2 border-white rounded-full"></div>
           )}
@@ -45,6 +54,23 @@ export function ChatHeader({ chatName, isOnline, avatar, lastSeen }: ChatHeaderP
       </div>
 
       <div className="flex items-center gap-2">
+        {/* User Avatar - Clickable to go to profile */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 p-0"
+          onClick={handleProfileClick}
+          title="Go to Profile"
+        >
+          <SmartAvatar 
+            src={currentUser?.avatar} 
+            alt={currentUser?.name} 
+            fallback={currentUser?.name || currentUser?.userName}
+            size="sm"
+            className="bg-primary text-primary-foreground"
+          />
+        </Button>
+        
         <Button 
           variant="ghost" 
           size="icon" 

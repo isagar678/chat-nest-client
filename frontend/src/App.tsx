@@ -6,6 +6,8 @@ import Chats from "./components/MessageBoard";
 import { useContext, useEffect } from "react";
 import AuthContext from "./context/AuthContext";
 import { ChatApp } from "./components/chat/ChatApp";
+import { Profile } from "./components/Profile";
+import { AvatarTest } from "./components/AvatarTest";
 
 function App() {
 
@@ -72,6 +74,12 @@ function App() {
         <Route path="/register" element={<RegisterForm className="flex min-h-svh flex-col items-center justify-center" />} />
         <Route path="/chats" element={<ProtectedRoute>
             <ChatApp/>
+          </ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute>
+            <Profile/>
+          </ProtectedRoute>} />
+        <Route path="/avatar-test" element={<ProtectedRoute>
+            <AvatarTest/>
           </ProtectedRoute>} />
         <Route path="/api" element={<GoogleCallback />} />
       </Routes>

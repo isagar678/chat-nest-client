@@ -38,7 +38,7 @@ export function ChatHeader({ chatName, isOnline, avatar, lastSeen }: ChatHeaderP
             alt={chatName} 
             fallback={chatName}
             size="md"
-            className="bg-primary text-primary-foreground"
+            className="bg-primary text-dark-foreground"
           />
           {isOnline && (
             <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 border-2 border-white rounded-full"></div>
@@ -67,7 +67,7 @@ export function ChatHeader({ chatName, isOnline, avatar, lastSeen }: ChatHeaderP
             alt={currentUser?.name} 
             fallback={currentUser?.name || currentUser?.userName}
             size="sm"
-            className="bg-primary text-primary-foreground"
+            className="bg-primary text-dark-foreground"
           />
         </Button>
         

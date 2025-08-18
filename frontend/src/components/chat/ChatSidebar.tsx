@@ -106,7 +106,7 @@ export function ChatSidebar({ className, onChatSelect, selectedChatId, friends, 
                     alt={friend.friendDetails.name} 
                     fallback={friend.friendDetails.name}
                     size="lg"
-                    className="bg-primary text-primary-foreground"
+                    className="bg-primary text-dark-foreground"
                   />
                   
                   {/* Online indicator */}

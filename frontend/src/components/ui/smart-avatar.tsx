@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { refreshAvatarUrl } from '@/lib/avatarUtils';
 
@@ -22,6 +22,10 @@ export function SmartAvatar({
   const [currentSrc, setCurrentSrc] = useState<string | undefined>(src);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Keep internal src in sync with prop updates (e.g., after async data loads)
+  useEffect(() => {
+    setCurrentSrc(src);
+  }, [src]);
 
 
   const sizeClasses = {

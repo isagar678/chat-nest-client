@@ -25,7 +25,9 @@ const api = axios.create({
 
 const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<any>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(
+    () => localStorage.getItem('accessToken')
+  );
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const interceptorRef = useRef<number | null>(null);
@@ -59,6 +61,7 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const { access_token } = response.data;
 
       setAccessToken(access_token);
+      localStorage.setItem('accessToken', access_token);
       
       // Also set the token in axios defaults to ensure it's used immediately
       api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
@@ -69,6 +72,7 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return access_token;
     } catch (err) {
       setAccessToken(null);
+      localStorage.removeItem('accessToken');
       setUser(null);
       return null;
     } finally {
@@ -115,11 +119,21 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const fetchUserData = useCallback(async (token?: string) => {
     try {
       const tokenToUse = token || accessToken;
-      const response = await api.get('/auth/profile');
+      if (tokenToUse) {
+        api.defaults.headers.common['Authorization'] = `Bearer ${tokenToUse}`;
+      }
+      // Prefer detailed profile that includes avatar
+      const response = await api.get('/user/my/avatar');
       setUser(response.data);
     } catch (error) {
-      console.error('Failed to fetch user data:', error);
-      setUser(null);
+      console.error('Failed to fetch detailed user data, falling back to basic profile:', error);
+      try {
+        const basic = await api.get('/auth/profile');
+        setUser(basic.data);
+      } catch (innerErr) {
+        console.error('Failed to fetch user profile:', innerErr);
+        setUser(null);
+      }
     } finally {
       setLoading(false);
     }
@@ -183,6 +197,7 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const response = await api.post('/auth/login', credentials);
     const { access_token } = response.data;
     setAccessToken(access_token);
+    localStorage.setItem('accessToken', access_token);
     api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
 
     supabase.auth.setSession({
@@ -198,6 +213,7 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const response = await api.post('/auth/register', credentials);
     const { access_token } = response.data;
     setAccessToken(access_token);
+    localStorage.setItem('accessToken', access_token);
     api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
 
     supabase.auth.setSession({
@@ -216,6 +232,7 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Logout
   const logout = () => {
     setAccessToken(null);
+    localStorage.removeItem('accessToken');
     setUser(null);
     // Call logout endpoint to clear refresh token cookie
     api.post('/auth/logout').catch(() => {});

@@ -1,9 +1,11 @@
 export interface Message {
   id?: number;
+  clientMessageId?: number;
   content: string;
   timestamp?: string;
   isSent: boolean;
   isRead?: boolean;
+  isDelivered?: boolean;
   filePath?: string;
   fileName?: string;
   fileSize?: number;

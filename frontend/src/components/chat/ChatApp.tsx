@@ -57,8 +57,9 @@ export function ChatApp() {
 
       setAllChats(prevChats => {
         // Check if we already have a chat with this user
+        const fromId = Number(data.from);
         const chatIndex = prevChats.friends.findIndex(
-          chat => chat.friendDetails.id === parseInt(data.from)
+          chat => chat.friendDetails.id === fromId
         );
 
         if (chatIndex !== -1) {
@@ -70,6 +71,7 @@ export function ChatApp() {
             timestamp: new Date().toISOString(),
             isSent: false,
             isRead: selectedFriendIndex === chatIndex, // Mark as read if currently viewing this chat
+            isDelivered: true,
             filePath: data.filePath,
             fileName: data.fileName,
             fileSize: data.fileSize,
@@ -95,9 +97,12 @@ export function ChatApp() {
           } else {
             // If message is from currently selected friend, mark as read immediately
             try {
+              const fromIdLocal = Number(data.from);
               api.put('/user/mark/read', {
-                from: parseInt(data.from)
+                from: fromIdLocal
               });
+              // Emit socket event so sender updates read receipts instantly
+              socket.emit('markMessagesRead', { from: fromIdLocal });
             } catch (error) {
               console.error('Failed to mark message as read:', error);
             }
@@ -161,6 +166,41 @@ export function ChatApp() {
     };
 
     socket.on('privateMessageReceived', handlePrivateMessage);
+    socket.on('messageDelivered', (data: any) => {
+      setAllChats(prev => ({
+        ...prev,
+        friends: prev.friends.map(friend => {
+          if (friend.friendDetails.id === Number(data.recipientId)) {
+            return {
+              ...friend,
+              messages: friend.messages.map(m =>
+                m.clientMessageId === data.clientMessageId
+                  ? { ...m, isDelivered: true }
+                  : m
+              )
+            };
+          }
+          return friend;
+        })
+      }));
+    });
+    socket.on('messagesRead', (data: any) => {
+      const readerId = typeof data.from === 'string' ? Number(data.from) : data.from;
+      setAllChats(prev => ({
+        ...prev,
+        friends: prev.friends.map(friend =>
+          friend.friendDetails.id === readerId
+            ? {
+                ...friend,
+                messages: friend.messages.map(m => ({
+                  ...m,
+                  isRead: m.isSent ? true : m.isRead,
+                }))
+              }
+            : friend
+        )
+      }));
+    });
     socket.on('typingStart', handleTypingStart);
     socket.on('typingStop', handleTypingStop);
     socket.on('userStatusChange', handleOnlineStatusUpdate);
@@ -171,6 +211,8 @@ export function ChatApp() {
       socket.off('typingStart', handleTypingStart);
       socket.off('typingStop', handleTypingStop);
       socket.off('userStatusChange', handleOnlineStatusUpdate);
+      socket.off('messageDelivered');
+      socket.off('messagesRead');
       socket.off('initialFriendsStatus', handleInitialFriendsStatus);
     };
   }, [socket, selectedFriendIndex, toast, selectedFriend, api]);
@@ -244,6 +286,7 @@ export function ChatApp() {
       console.log('Sending message to:', selectedFriend);
 
       // Emit the message to the backend
+      const clientMessageId = Date.now();
       socket.emit('privateMessage', {
         recipientId: selectedFriend.id,
         message: content.trim(),
@@ -251,6 +294,7 @@ export function ChatApp() {
         fileName: uploadedFileName,
         fileSize: uploadedFileSize,
         fileType: uploadedFileType,
+        clientMessageId,
       });
 
       // Stop typing indicator
@@ -259,9 +303,11 @@ export function ChatApp() {
       // Create new message object
       const newMessage: Message = {
         id: Date.now(), // Generate temporary ID
+        clientMessageId,
         content: content.trim(),
         timestamp: new Date().toISOString(),
         isSent: true,
+        isDelivered: false,
         filePath: uploadedFilePath,
         fileName: uploadedFileName,
         fileSize: uploadedFileSize,
@@ -301,6 +347,8 @@ export function ChatApp() {
       await api.put('/user/mark/read', {
         from: allChats.friends[friendIndex].friendDetails.id
       });
+      // Inform via socket for real-time read receipts
+      socket?.emit('markMessagesRead', { from: allChats.friends[friendIndex].friendDetails.id });
 
       // Update local state to mark messages as read
       setAllChats(prev => ({

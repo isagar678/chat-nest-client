@@ -3,7 +3,7 @@ import { SmartAvatar } from '@/components/ui/smart-avatar';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useApi } from '@/lib/useApi';
-import { Download, File, Image, FileText, Video, Music, Play, Pause, Volume2 } from 'lucide-react';
+import { Download, File, Image, FileText, Video, Music, Play, Pause, Volume2, Check, CheckCheck } from 'lucide-react';
 import { useState, useRef } from 'react';
 import type { Message } from '@/types/chat';
 
@@ -16,7 +16,7 @@ interface MessageBubbleProps {
 }
 
 export function MessageBubble({ message, showAvatar = true, className, senderAvatar, senderName }: MessageBubbleProps) {
-  const { content, timestamp, isSent, filePath, fileName, fileSize, mimeType } = message;
+  const { content, timestamp, isSent, filePath, fileName, fileSize, mimeType, isDelivered, isRead } = message;
   
 
   const api = useApi();
@@ -192,12 +192,23 @@ export function MessageBubble({ message, showAvatar = true, className, senderAva
         </div>
 
         <div className={cn(
-          "flex items-center gap-1 px-2",
+          "flex items-center gap-1 px-2 min-h-4",
           isSent ? "flex-row-reverse" : ""
         )}>
           <span className="text-xs text-muted-foreground">
             {timestamp ? new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
           </span>
+          {isSent && (
+            <span className="ml-1 text-muted-foreground">
+              {isRead ? (
+                <CheckCheck className="h-4 w-4 text-blue-500" />
+              ) : isDelivered ? (
+                <CheckCheck className="h-4 w-4" />
+              ) : (
+                <Check className="h-4 w-4" />
+              )}
+            </span>
+          )}
         </div>
       </div>
     </div>

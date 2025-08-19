@@ -1,9 +1,11 @@
 import { useContext } from 'react';
 import { SmartAvatar } from '@/components/ui/smart-avatar';
 import { Button } from '@/components/ui/button';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, Bot } from 'lucide-react';
 import AuthContext from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { BotChat } from './BotChat';
 
 interface ChatHeaderProps {
   chatName: string;
@@ -16,6 +18,7 @@ export function ChatHeader({ chatName, isOnline, avatar, lastSeen }: ChatHeaderP
   const auth = useContext(AuthContext);
   const currentUser = auth?.user;
   const navigate = useNavigate();
+  const [botOpen, setBotOpen] = useState(false);
 
 
 
@@ -54,6 +57,15 @@ export function ChatHeader({ chatName, isOnline, avatar, lastSeen }: ChatHeaderP
       </div>
 
       <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9"
+          onClick={() => setBotOpen(true)}
+          title="Chat with Gemini"
+        >
+          <Bot className="h-4 w-4 text-pink-600" />
+        </Button>
         {/* User Avatar - Clickable to go to profile */}
         <Button
           variant="ghost"
@@ -81,6 +93,7 @@ export function ChatHeader({ chatName, isOnline, avatar, lastSeen }: ChatHeaderP
           <LogOut className="h-4 w-4" />
         </Button>
       </div>
+      {botOpen && <BotChat open={botOpen} onClose={() => setBotOpen(false)} />}
     </div>
   );
 }

@@ -84,8 +84,11 @@ export function Profile() {
   const handleSaveProfile = async () => {
     setIsSaving(true);
     try {
-      // Note: You'll need to add an endpoint to update profile information
-      // For now, we'll just show a success message
+      const result = await api.put('/user/profile', { name: formData.name });
+      setProfile(prev => prev ? { ...prev, name: result.data.name } : result.data);
+      if (auth?.refreshUserData) {
+        await auth.refreshUserData();
+      }
       toast({
         title: "Profile updated",
         description: "Your profile information has been updated successfully.",
@@ -266,6 +269,7 @@ export function Profile() {
                 value={formData.userName}
                 onChange={(e) => handleInputChange('userName', e.target.value)}
                 placeholder="Enter your username"
+                disabled
               />
             </div>
 

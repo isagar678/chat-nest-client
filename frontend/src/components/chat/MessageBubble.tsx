@@ -116,8 +116,8 @@ export function MessageBubble({ message, showAvatar = true, className, senderAva
         <div className={cn(
           "px-4 py-2 rounded-2xl max-w-full break-words",
           isSent 
-            ? "bg-chat-bubble-sent text-chat-bubble-sent-foreground rounded-br-md" 
-            : "bg-chat-bubble-received text-chat-bubble-received-foreground rounded-bl-md"
+            ? "bg-primary text-primary-foreground rounded-br-md shadow-sm" 
+            : "bg-secondary text-secondary-foreground rounded-bl-md shadow-sm"
         )}>
           {/* Voice message */}
           {isVoiceMessage && (

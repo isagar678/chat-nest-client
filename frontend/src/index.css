@@ -43,37 +43,37 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --background: #fff5f8; /* light blush */
+  --foreground: #4a1f2f; /* deep rose for text */
+  --card: #ffffff;
+  --card-foreground: #4a1f2f;
+  --popover: #ffffff;
+  --popover-foreground: #4a1f2f;
+  --primary: #e91e63; /* vibrant pink */
+  --primary-foreground: #ffffff;
+  --secondary: #ffe3ec; /* soft pink */
+  --secondary-foreground: #4a1f2f;
+  --muted: #ffeaf1; /* lighter pink */
+  --muted-foreground: #7a3b4c;
+  --accent: #ffd6e5; /* pastel accent */
+  --accent-foreground: #4a1f2f;
+  --destructive: #ff4d4f; /* red */
+  --border: #ffd6e5;
+  --input: #ffd6e5;
+  --ring: #f48fb1; /* focus ring pink */
+  --chart-1: #e91e63; /* pink */
+  --chart-2: #f48fb1; /* light pink */
+  --chart-3: #ba68c8; /* lavender */
+  --chart-4: #ffb74d; /* warm amber */
+  --chart-5: #64b5f6; /* soft blue */
+  --sidebar: #fff0f5; /* lavenderblush */
+  --sidebar-foreground: #4a1f2f;
+  --sidebar-primary: #e91e63;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #ffd6e5;
+  --sidebar-accent-foreground: #4a1f2f;
+  --sidebar-border: #ffd6e5;
+  --sidebar-ring: #f48fb1;
 }
 
 .dark {
@@ -116,5 +116,8 @@
   }
   body {
     @apply bg-background text-foreground;
+    background-image: radial-gradient(1200px 600px at 10% -10%, rgba(255, 182, 193, 0.35) 0%, rgba(255, 182, 193, 0) 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(244, 143, 177, 0.25) 0%, rgba(244, 143, 177, 0) 60%);
+    background-attachment: fixed;
   }
 }

@@ -231,11 +231,18 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Logout
   const logout = () => {
+    // Clear client-side auth state first
     setAccessToken(null);
     localStorage.removeItem('accessToken');
     setUser(null);
+    // Remove Authorization header immediately to prevent stale auth on resumed pages
+    delete api.defaults.headers.common['Authorization'];
+    // Best-effort: clear any third-party/session state
+    try { supabase.auth.signOut().catch(() => {}); } catch {}
     // Call logout endpoint to clear refresh token cookie
     api.post('/auth/logout').catch(() => {});
+    // Replace history entry to prevent navigating back into protected screens via BFCache
+    window.location.replace('/login');
   };
 
   // Refresh user data

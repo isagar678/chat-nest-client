@@ -9,7 +9,8 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useState, useContext } from "react"
+import { useState, useContext, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import AuthContext from "../context/AuthContext";
 
 export function LoginForm({
@@ -22,6 +23,7 @@ export function LoginForm({
     password: ""
   })
   const { login, loginWithGoogle } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +32,7 @@ export function LoginForm({
         username: formData.username,
         password: formData.password
       });
-      // Optionally, redirect or show success
+      navigate('/', { replace: true });
     } catch (error) {
       // Optionally, handle error (e.g., show error message)
       console.error(error);

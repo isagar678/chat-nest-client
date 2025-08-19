@@ -31,7 +31,9 @@ export const SocketProvider: React.FC<Props> = ({ children }) => {
   useEffect(() => {
     return () => {
       if (socket) {
-        socket.disconnect(); // clean up on unmount
+        // Ensure transport and listeners are fully cleaned up
+        try { socket.removeAllListeners(); } catch {}
+        socket.disconnect();
       }
     };
   }, [socket]);

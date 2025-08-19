@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom"
 import { LoginForm } from "./components/login-form"
 import { RegisterForm } from "./components/register-form"
 import {Dashboard} from "./components/Dashboard";
@@ -28,6 +28,16 @@ function App() {
     return children;
   };
 
+  const PublicOnlyRoute = ({ children }: { children: React.ReactNode }) => {
+    if (loading) {
+      return <div>Loading...</div>;
+    }
+    if (accessToken) {
+      return <Navigate to="/" replace />;
+    }
+    return children;
+  };
+
   // Google OAuth Callback Handler
   const GoogleCallback = () => {
     useEffect(() => {
@@ -53,6 +63,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <BFCacheGuard />
       <Routes>
         <Route path="/" element={
           <ProtectedRoute>
@@ -69,8 +80,8 @@ function App() {
             <Chats className="flex min-h-svh flex-col items-center justify-center"/>
           </ProtectedRoute>
         }/>
-        <Route path="/login" element={<LoginForm className="flex min-h-svh flex-col items-center justify-center" />} />
-        <Route path="/register" element={<RegisterForm className="flex min-h-svh flex-col items-center justify-center" />} />
+        <Route path="/login" element={<PublicOnlyRoute><LoginForm className="flex min-h-svh flex-col items-center justify-center" /></PublicOnlyRoute>} />
+        <Route path="/register" element={<PublicOnlyRoute><RegisterForm className="flex min-h-svh flex-col items-center justify-center" /></PublicOnlyRoute>} />
         <Route path="/chats" element={<ProtectedRoute>
             <ChatApp/>
           </ProtectedRoute>} />
@@ -84,3 +95,25 @@ function App() {
 }
 
 export default App
+
+// Prevent showing protected pages from bfcache when navigating back after logout
+function BFCacheGuard() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const auth = useContext(AuthContext);
+  const accessToken = auth?.accessToken;
+
+  useEffect(() => {
+    const handler = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        // If page restored from bfcache, force revalidation
+        if (!accessToken) {
+          navigate('/login', { replace: true, state: { from: location.pathname } });
+        }
+      }
+    };
+    window.addEventListener('pageshow', handler as any);
+    return () => window.removeEventListener('pageshow', handler as any);
+  }, [accessToken, navigate, location.pathname]);
+  return null;
+}

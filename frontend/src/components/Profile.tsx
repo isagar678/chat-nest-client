@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useApi } from '@/lib/useApi';
 import AuthContext from '@/context/AuthContext';
 import { User, Settings, Save, Loader2 } from 'lucide-react';
+import { getServerUrl } from '@/lib/utils';
 
 interface UserProfile {
   id: number;
@@ -117,7 +118,7 @@ export function Profile() {
     if (!file) {
       // Handle avatar removal
       try {
-        const response = await fetch('http://localhost:3000/user/avatar/remove', {
+        const response = await fetch(`${getServerUrl()}/user/avatar/remove`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${auth.accessToken}`,
@@ -153,7 +154,7 @@ export function Profile() {
       const formData = new FormData();
       formData.append('avatar', file);
 
-      const response = await fetch('http://localhost:3000/user/avatar/upload', {
+      const response = await fetch(`${getServerUrl()}/user/avatar/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${auth.accessToken}`,

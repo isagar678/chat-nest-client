@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect, useCallback, useRef } from "react";
 import axios from 'axios';
 import { supabase } from "@/lib/supabase.client";
+import { getServerUrl } from "@/lib/utils";
 
 interface AuthContextType {
   user: any;
@@ -15,7 +16,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_BASE = 'http://localhost:3000';
+const API_BASE = getServerUrl();
 
 // Create axios instance outside component to prevent recreation
 const api = axios.create({

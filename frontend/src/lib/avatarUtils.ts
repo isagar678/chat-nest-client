@@ -1,3 +1,5 @@
+import { getServerUrl } from './utils';
+
 export const refreshAvatarUrl = async (currentUrl: string): Promise<string | null> => {
   try {
     // Create a direct fetch request instead of using the hook
@@ -7,7 +9,7 @@ export const refreshAvatarUrl = async (currentUrl: string): Promise<string | nul
       return null;
     }
 
-    const response = await fetch('http://localhost:3000/user/avatar/refresh-url', {
+    const response = await fetch(`${getServerUrl()}/user/avatar/refresh-url`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

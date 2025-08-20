@@ -78,3 +78,20 @@ export function showBrowserNotification(title: string, body: string, icon?: stri
     console.log('Could not show browser notification:', error);
   }
 }
+
+// Environment configuration
+export const config = {
+  // Server URL - reads from VITE_SERVER_URL env variable, defaults to localhost:3000
+  SERVER_URL: import.meta.env.VITE_SERVER_URL || 'http://localhost:3000',
+  
+  // Other environment variables can be added here
+  NODE_ENV: import.meta.env.MODE,
+  IS_DEV: import.meta.env.DEV,
+  IS_PROD: import.meta.env.PROD,
+} as const;
+
+// Helper function to get the server URL
+export const getServerUrl = () => config.SERVER_URL;
+
+// Helper function to get WebSocket URL (same as server URL for now)
+export const getWebSocketUrl = () => config.SERVER_URL;

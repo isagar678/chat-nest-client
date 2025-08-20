@@ -1,6 +1,7 @@
 import React, { createContext, useEffect, useMemo, useContext } from 'react';
 import { Socket, io } from 'socket.io-client';
 import AuthContext from './AuthContext';
+import { getWebSocketUrl } from '@/lib/utils';
 
 export const SocketContext = createContext<Socket | null>(null);
 
@@ -19,7 +20,7 @@ export const SocketProvider: React.FC<Props> = ({ children }) => {
       return null;
     }
     console.log('making 2nd attempt')
-    return io('http://localhost:3000', {
+    return io(getWebSocketUrl(), {
       transports: ['websocket'],
       auth: {
         token: accessToken,

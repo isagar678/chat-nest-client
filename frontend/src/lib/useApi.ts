@@ -1,9 +1,10 @@
 import AuthContext from "@/context/AuthContext"
 import axios from "axios";
 import { useContext, useEffect, useRef } from "react"
+import { getServerUrl } from "./utils";
 
 
-const API_BASE = 'http://localhost:3000';
+const API_BASE = getServerUrl();
 
 export const useApi = () => {
     const { accessToken } = useContext(AuthContext)

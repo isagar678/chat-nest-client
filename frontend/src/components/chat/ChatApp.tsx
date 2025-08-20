@@ -11,7 +11,7 @@ import { useApi } from '@/lib/useApi';
 import { SocketContext } from '@/context/WebSocketContext';
 
 import { useToast } from '@/hooks/use-toast';
-import { playNotificationSound } from '@/lib/utils';
+import { playNotificationSound, requestNotificationPermission, showBrowserNotification } from '@/lib/utils';
 
 import type { Message, Friend, AllChats, SearchedUser } from '@/types/chat';
 
@@ -49,6 +49,11 @@ export function ChatApp() {
   const api = useApi();
   const socket = useContext(SocketContext);
 
+  // Request notification permission on component mount
+  useEffect(() => {
+    requestNotificationPermission();
+  }, []);
+
   useEffect(() => {
     if (!socket) return;
 
@@ -83,19 +88,30 @@ export function ChatApp() {
             messages: [...updatedFriends[chatIndex].messages, newMessage]
           };
 
-          // Show notification if message is not from currently selected friend
-          if (selectedFriendIndex !== chatIndex) {
-            const senderName = data.fromName || `User ${data.from}`;
-            const isVoiceMessage = data.fileName?.includes('voice-message') || data.fileType?.startsWith('audio/');
-            const messagePreview = isVoiceMessage ? '🎤 Voice Message' : (data.fileName ? `📎 ${data.fileName}` : data.message);
-            toast({
-              title: `New message from ${senderName}`,
-              description: messagePreview,
-              duration: 5000,
-            });
-            playNotificationSound();
-          } else {
-            // If message is from currently selected friend, mark as read immediately
+          // Show notifications for all new messages
+          const senderName = data.fromName || `User ${data.from}`;
+          const isVoiceMessage = data.fileName?.includes('voice-message') || data.fileType?.startsWith('audio/');
+          const messagePreview = isVoiceMessage ? '🎤 Voice Message' : (data.fileName ? `📎 ${data.fileName}` : data.message);
+          
+          // Show toast notification
+          toast({
+            title: `New message from ${senderName}`,
+            description: messagePreview,
+            duration: 5000,
+          });
+
+          // Show browser notification
+          showBrowserNotification(
+            `New message from ${senderName}`,
+            messagePreview,
+            '/vite.svg'
+          );
+
+          // Play notification sound
+          playNotificationSound();
+
+          // If message is from currently selected friend, mark as read immediately
+          if (selectedFriendIndex === chatIndex) {
             try {
               const fromIdLocal = Number(data.from);
               api.put('/user/mark/read', {
@@ -117,12 +133,24 @@ export function ChatApp() {
           const senderName = data.fromName || `User ${data.from}`;
           const isVoiceMessage = data.fileName?.includes('voice-message') || data.fileType?.startsWith('audio/');
           const messagePreview = isVoiceMessage ? '🎤 Voice Message' : (data.fileName ? `📎 ${data.fileName}` : data.message);
+          
+          // Show toast notification
           toast({
             title: `New message from ${senderName}`,
             description: messagePreview,
             duration: 5000,
           });
+
+          // Show browser notification
+          showBrowserNotification(
+            `New message from ${senderName}`,
+            messagePreview,
+            '/vite.svg'
+          );
+
+          // Play notification sound
           playNotificationSound();
+          
           console.log('Message from unknown user:', data);
         }
 

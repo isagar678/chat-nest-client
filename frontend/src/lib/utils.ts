@@ -28,3 +28,53 @@ export function playNotificationSound() {
     console.log('Could not play notification sound:', error);
   }
 }
+
+// Browser notification utility
+export async function requestNotificationPermission() {
+  if (!('Notification' in window)) {
+    console.log('This browser does not support notifications');
+    return false;
+  }
+
+  if (Notification.permission === 'granted') {
+    return true;
+  }
+
+  if (Notification.permission === 'denied') {
+    console.log('Notification permission denied');
+    return false;
+  }
+
+  const permission = await Notification.requestPermission();
+  return permission === 'granted';
+}
+
+export function showBrowserNotification(title: string, body: string, icon?: string) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') {
+    return;
+  }
+
+  try {
+    const notification = new Notification(title, {
+      body,
+      icon: icon || '/vite.svg', // Default icon
+      badge: '/vite.svg',
+      tag: 'chat-message', // Group notifications
+      requireInteraction: false,
+      silent: false,
+    });
+
+    // Auto-close after 5 seconds
+    setTimeout(() => {
+      notification.close();
+    }, 5000);
+
+    // Handle click to focus the window
+    notification.onclick = () => {
+      window.focus();
+      notification.close();
+    };
+  } catch (error) {
+    console.log('Could not show browser notification:', error);
+  }
+}

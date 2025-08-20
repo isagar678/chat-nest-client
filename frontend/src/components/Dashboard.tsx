@@ -1,21 +1,36 @@
-import { useContext } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useNavigate } from 'react-router-dom';
 import AuthContext from '@/context/AuthContext';
-import { User, MessageSquare, Settings, Heart, Stars } from 'lucide-react';
+import { User, MessageSquare, Settings, Heart, Stars, Bell, BellOff } from 'lucide-react';
+import { requestNotificationPermission } from '@/lib/utils';
 
 export const Dashboard = () => {
   const navigate = useNavigate();
   const auth = useContext(AuthContext);
   const user = auth?.user;
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
 
   const initials = (user?.name || user?.userName || 'User')
     ?.split(' ')
     .map((n: string) => n[0])
     .join('')
     .slice(0, 2);
+
+  useEffect(() => {
+    if ('Notification' in window) {
+      setNotificationPermission(Notification.permission);
+    }
+  }, []);
+
+  const handleEnableNotifications = async () => {
+    const granted = await requestNotificationPermission();
+    if (granted) {
+      setNotificationPermission('granted');
+    }
+  };
 
   return (
     <div className="relative">
@@ -62,7 +77,7 @@ export const Dashboard = () => {
         </div>
 
         {/* Quick actions */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {/* Profile Card */}
           <Card
             className="cursor-pointer border-pink-200/60 hover:shadow-lg hover:shadow-pink-200/50 transition-all duration-300 hover:-translate-y-0.5"
@@ -108,6 +123,47 @@ export const Dashboard = () => {
               <p className="text-sm text-muted-foreground">
                 Send messages, share files, and stay connected
               </p>
+            </CardContent>
+          </Card>
+
+          {/* Notifications Card */}
+          <Card className="border-pink-200/60 hover:shadow-lg hover:shadow-pink-200/50 transition-all duration-300 hover:-translate-y-0.5">
+            <CardHeader className="flex flex-row items-center gap-4">
+              <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                {notificationPermission === 'granted' ? (
+                  <Bell className="h-6 w-6 text-purple-600" />
+                ) : (
+                  <BellOff className="h-6 w-6 text-gray-400" />
+                )}
+              </div>
+              <div>
+                <CardTitle>Notifications</CardTitle>
+                <CardDescription>
+                  {notificationPermission === 'granted' 
+                    ? 'Notifications enabled' 
+                    : 'Enable message notifications'
+                  }
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-3">
+                {notificationPermission === 'granted' 
+                  ? 'You\'ll receive notifications for new messages'
+                  : 'Get notified when you receive new messages'
+                }
+              </p>
+              {notificationPermission !== 'granted' && (
+                <Button 
+                  onClick={handleEnableNotifications}
+                  variant="outline" 
+                  size="sm"
+                  className="w-full border-pink-300 text-pink-700 hover:bg-pink-50"
+                >
+                  <Bell className="h-4 w-4 mr-2" />
+                  Enable Notifications
+                </Button>
+              )}
             </CardContent>
           </Card>
 

@@ -1,17 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useApi } from '@/lib/useApi';
-import { useContext } from 'react';
 import { SocketContext } from '@/context/WebSocketContext';
 import AuthContext from '@/context/AuthContext';
-import type { Group, GroupMessage, GroupMember } from '@/types/chat';
-import { Send, Users, MoreVertical, File, Paperclip } from 'lucide-react';
+import type { Group, GroupMessage } from '@/types/chat';
+import { Users, MoreVertical } from 'lucide-react';
+import { ChatInput } from './ChatInput';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,14 +22,10 @@ interface GroupChatProps {
 
 export const GroupChat: React.FC<GroupChatProps> = ({ group, onClose }) => {
   const [messages, setMessages] = useState<GroupMessage[]>([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { toast } = useToast();
   const api = useApi();
@@ -173,49 +165,50 @@ export const GroupChat: React.FC<GroupChatProps> = ({ group, onClose }) => {
     }
   };
 
-  const handleSendMessage = async () => {
-    if (!newMessage.trim() && !selectedFile) return;
+  // Legacy input logic removed in favor of shared ChatInput
 
-    setIsLoading(true);
+  // New: use shared ChatInput to send messages (with optional file)
+  const handleSendFromChatInput = async (content: string, file?: File) => {
+    if (!content.trim() && !file) return;
+    // Note: ChatInput manages its own disabled state via isUploading
     try {
       let filePath: string | undefined;
       let fileName: string | undefined;
       let fileSize: number | undefined;
       let mimeType: string | undefined;
 
-      // Upload file if selected
-      if (selectedFile) {
+      if (file) {
         setIsUploading(true);
         const formData = new FormData();
-        formData.append('file', selectedFile);
-        
+        formData.append('file', file);
+
         const uploadResponse = await api.post('/user/upload', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         });
-        
+
         filePath = uploadResponse.data.filePath;
-        fileName = selectedFile.name;
-        fileSize = selectedFile.size;
-        mimeType = selectedFile.type;
+        fileName = file.name;
+        fileSize = file.size;
+        mimeType = file.type;
         setIsUploading(false);
       }
 
       // Send message via socket
       socket?.emit('groupMessage', {
         groupId: group.id,
-        message: newMessage.trim(),
+        message: content.trim(),
         filePath,
         fileName,
         fileSize,
         fileType: mimeType,
       });
 
-      // Add message to local state immediately for better UX
+      // Add message locally for instant feedback
       const localMessage: GroupMessage = {
         id: Date.now() + Math.random(),
-        content: newMessage.trim(),
+        content: content.trim(),
         timeStamp: new Date().toISOString(),
         read: false,
         filePath,
@@ -232,48 +225,17 @@ export const GroupChat: React.FC<GroupChatProps> = ({ group, onClose }) => {
           name: group.name,
         },
       };
-      
-      console.log('GroupChat: Adding local message:', localMessage);
-      
-      setMessages(prev => {
-        const updatedMessages = [...prev, localMessage];
-        console.log('GroupChat: Updated messages with local message, new count:', updatedMessages.length);
-        return updatedMessages;
-      });
 
-      // Clear input
-      setNewMessage('');
-      setSelectedFile(null);
+      setMessages(prev => [...prev, localMessage]);
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
-        title: "Error",
-        description: "Failed to send message",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to send message',
+        variant: 'destructive',
       });
     } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-    }
-  };
-
-  const removeSelectedFile = () => {
-    setSelectedFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
+      // no-op
     }
   };
 
@@ -412,63 +374,12 @@ export const GroupChat: React.FC<GroupChatProps> = ({ group, onClose }) => {
           )}
         </div>
 
-        {/* Input Area */}
-        <div className="border-t p-4 space-y-3 bg-background flex-shrink-0">
-          {/* Selected File */}
-          {selectedFile && (
-            <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
-              <File className="h-4 w-4" />
-              <span className="text-sm flex-1 truncate">{selectedFile.name}</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={removeSelectedFile}
-                className="h-6 w-6 p-0"
-              >
-                ×
-              </Button>
-            </div>
-          )}
-
-          {/* Message Input */}
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isLoading || isUploading}
-            >
-              <Paperclip className="h-4 w-4" />
-            </Button>
-            
-            <Input
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Type a message..."
-              disabled={isLoading || isUploading}
-              className="flex-1"
-            />
-            
-            <Button
-              onClick={handleSendMessage}
-              disabled={isLoading || isUploading || (!newMessage.trim() && !selectedFile)}
-              size="sm"
-            >
-              {isLoading || isUploading ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-          
-          <input
-            ref={fileInputRef}
-            type="file"
-            onChange={handleFileSelect}
-            className="hidden"
-            accept="*/*"
+        {/* Input Area - using shared ChatInput for emoji, voice, attachments */}
+        <div className="border-t bg-background flex-shrink-0">
+          <ChatInput
+            onSendMessage={handleSendFromChatInput}
+            isUploading={isUploading}
+            placeholder={`Message #${group.name}`}
           />
         </div>
       </div>

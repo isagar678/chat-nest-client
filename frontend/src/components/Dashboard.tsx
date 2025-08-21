@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useNavigate } from 'react-router-dom';
 import AuthContext from '@/context/AuthContext';
-import { User, MessageSquare, Settings, Heart, Stars, Bell, BellOff } from 'lucide-react';
+import { User, MessageSquare, Settings, Heart, Stars, Bell, BellOff, Users } from 'lucide-react';
 import { requestNotificationPermission } from '@/lib/utils';
 
 export const Dashboard = () => {
@@ -77,7 +77,7 @@ export const Dashboard = () => {
         </div>
 
         {/* Quick actions */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
           {/* Profile Card */}
           <Card
             className="cursor-pointer border-pink-200/60 hover:shadow-lg hover:shadow-pink-200/50 transition-all duration-300 hover:-translate-y-0.5"
@@ -115,13 +115,34 @@ export const Dashboard = () => {
                 <MessageSquare className="h-6 w-6 text-pink-600" />
               </div>
               <div>
-                <CardTitle>Chats</CardTitle>
+                <CardTitle>Private Chats</CardTitle>
                 <CardDescription>Start messaging with friends</CardDescription>
               </div>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
                 Send messages, share files, and stay connected
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Groups Card */}
+          <Card
+            className="cursor-pointer border-pink-200/60 hover:shadow-lg hover:shadow-pink-200/50 transition-all duration-300 hover:-translate-y-0.5"
+            onClick={() => navigate('/chats')}
+          >
+            <CardHeader className="flex flex-row items-center gap-4">
+              <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Users className="h-6 w-6 text-blue-600" />
+              </div>
+              <div>
+                <CardTitle>Group Chats</CardTitle>
+                <CardDescription>Chat with multiple people</CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Create groups, add members, and chat together
               </p>
             </CardContent>
           </Card>

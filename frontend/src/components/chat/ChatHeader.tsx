@@ -12,9 +12,10 @@ interface ChatHeaderProps {
   isOnline?: boolean;
   avatar?: string;
   lastSeen?: string;
+  statusOverride?: string;
 }
 
-export function ChatHeader({ chatName, isOnline, avatar, lastSeen }: ChatHeaderProps) {
+export function ChatHeader({ chatName, isOnline, avatar, lastSeen, statusOverride }: ChatHeaderProps) {
   const auth = useContext(AuthContext);
   const currentUser = auth?.user;
   const navigate = useNavigate();
@@ -51,7 +52,7 @@ export function ChatHeader({ chatName, isOnline, avatar, lastSeen }: ChatHeaderP
         <div>
           <h3 className="font-semibold text-foreground">{chatName}</h3>
           <p className="text-xs text-muted-foreground">
-            {isOnline ? 'Online' : lastSeen}
+            {statusOverride ? statusOverride : (isOnline ? 'Online' : lastSeen)}
           </p>
         </div>
       </div>

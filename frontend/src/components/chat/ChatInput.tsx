@@ -34,6 +34,7 @@ export function ChatInput({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
 
   const handleEmojiClick = (emojiObject: any) => {
     setMessage(prevMessage => prevMessage + emojiObject.emoji);
@@ -234,7 +235,8 @@ export function ChatInput({
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    const isCmdOrCtrl = e.ctrlKey || e.metaKey;
+    if ((e.key === 'Enter' && !e.shiftKey) || (isCmdOrCtrl && e.key.toLowerCase() === 'enter')) {
       e.preventDefault();
       handleSend();
     }
@@ -268,8 +270,49 @@ export function ChatInput({
     };
   }, [showEmojiPicker]);
 
+  // Paste to attach files support
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      if (!e.clipboardData) return;
+      const items = Array.from(e.clipboardData.items);
+      const fileItem = items.find((item) => item.kind === 'file');
+      if (fileItem) {
+        const pastedFile = fileItem.getAsFile();
+        if (pastedFile) {
+          setFile(pastedFile);
+        }
+      }
+    };
+    document.addEventListener('paste', onPaste);
+    return () => document.removeEventListener('paste', onPaste);
+  }, []);
+
+  // Drag and drop to attach
+  const onDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOver(true);
+  };
+
+  const onDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOver(false);
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      setFile(e.dataTransfer.files[0]);
+    }
+  };
+
   return (
-    <div className={cn("p-4 border-t border-border bg-background", className)}>
+    <div
+      className={cn("p-4 border-t border-border bg-background relative", className)}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+    >
       {/* File preview */}
       {file && (
         <div className="relative mb-2 p-2 border rounded-lg w-fit">
@@ -409,6 +452,14 @@ export function ChatInput({
           )}
         </Button>
       </div>
+      {isDraggingOver && (
+        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm border-2 border-dashed border-primary rounded-md flex items-center justify-center pointer-events-none">
+          <div className="text-center">
+            <p className="text-sm font-medium">Drop files to attach</p>
+            <p className="text-xs text-muted-foreground">Images, videos, audio, documents</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

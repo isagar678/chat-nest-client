@@ -1,8 +1,10 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SmartAvatar } from '@/components/ui/smart-avatar';
 import { MessageBubble } from './MessageBubble';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { ArrowDown } from 'lucide-react';
 
 import type { Message } from '@/types/chat';
 
@@ -22,16 +24,43 @@ interface ChatAreaProps {
 
 export function ChatArea({ messages, isTyping, className, currentFriend }: ChatAreaProps) {
     const scrollAreaRef = useRef<HTMLDivElement>(null);
+    const [isScrolledUp, setIsScrolledUp] = useState(false);
 
-    // Auto-scroll to bottom when new messages arrive
-    useEffect(() => {
-        if (scrollAreaRef.current) {
-            const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
-            if (scrollElement) {
-                scrollElement.scrollTop = scrollElement.scrollHeight;
-            }
+    const getViewport = useCallback(() => {
+        if (!scrollAreaRef.current) return null;
+        return scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement | null;
+    }, []);
+
+    const scrollToBottom = useCallback(() => {
+        const viewport = getViewport();
+        if (viewport) {
+            viewport.scrollTop = viewport.scrollHeight;
+            setIsScrolledUp(false);
         }
-    }, [messages, isTyping]);
+    }, [getViewport]);
+
+    // Auto-scroll to bottom when new messages arrive if near bottom
+    useEffect(() => {
+        const viewport = getViewport();
+        if (!viewport) return;
+        const isNearBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < 80;
+        if (isNearBottom) {
+            scrollToBottom();
+        } else {
+            setIsScrolledUp(true);
+        }
+    }, [messages, isTyping, getViewport, scrollToBottom]);
+
+    useEffect(() => {
+        const viewport = getViewport();
+        if (!viewport) return;
+        const onScroll = () => {
+            const scrolledUp = viewport.scrollTop + viewport.clientHeight < viewport.scrollHeight - 40;
+            setIsScrolledUp(scrolledUp);
+        };
+        viewport.addEventListener('scroll', onScroll);
+        return () => viewport.removeEventListener('scroll', onScroll);
+    }, [getViewport]);
 
     const shouldShowAvatar = (currentMessage: Message, index: number) => {
         if (currentMessage.isSent) return false;
@@ -80,6 +109,13 @@ export function ChatArea({ messages, isTyping, className, currentFriend }: ChatA
                     </div>
                 )}
             </div>
+            {isScrolledUp && (
+                <div className="fixed bottom-24 right-6">
+                    <Button size="icon" className="h-10 w-10 rounded-full shadow" onClick={scrollToBottom}>
+                        <ArrowDown className="h-5 w-5" />
+                    </Button>
+                </div>
+            )}
         </ScrollArea>
     );
 }

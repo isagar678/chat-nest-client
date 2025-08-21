@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useApi } from '@/lib/useApi';
 import { Download, File, Image, FileText, Video, Music, Play, Pause, Volume2, Check, CheckCheck } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import type { Message } from '@/types/chat';
 
 interface MessageBubbleProps {
@@ -92,6 +92,30 @@ export function MessageBubble({ message, showAvatar = true, className, senderAva
   };
 
   const isVoiceMessage = mimeType?.startsWith('audio/') || fileName?.includes('voice-message');
+  const isImage = useMemo(() => {
+    if (mimeType?.startsWith('image/')) return true;
+    if (!mimeType && fileName) {
+      const lower = fileName.toLowerCase();
+      return lower.endsWith('.png') || lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.gif') || lower.endsWith('.webp');
+    }
+    return false;
+  }, [mimeType, fileName]);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchImageUrl = async () => {
+      if (!filePath || !isImage) return;
+      try {
+        const response = await api.get(`/user/file/${encodeURIComponent(filePath)}`);
+        setImageUrl(response.data.url);
+      } catch (e) {
+        // Fallback: leave as null so regular attachment UI shows
+        console.error('Failed to fetch image URL:', e);
+      }
+    };
+    fetchImageUrl();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filePath, isImage]);
 
   return (
     <div className={cn(
@@ -164,8 +188,20 @@ export function MessageBubble({ message, showAvatar = true, className, senderAva
             </div>
           )}
 
-          {/* File attachment (non-voice) */}
-          {filePath && !isVoiceMessage && (
+          {/* Inline image preview */}
+          {filePath && !isVoiceMessage && isImage && imageUrl && (
+            <div className="mb-2">
+              <img
+                src={imageUrl}
+                alt={fileName || 'image'}
+                className="rounded-lg max-w-full h-auto cursor-pointer"
+                onClick={() => window.open(imageUrl || '#', '_blank')}
+              />
+            </div>
+          )}
+
+          {/* File attachment (non-voice, non-image or when preview unavailable) */}
+          {filePath && !isVoiceMessage && (!isImage || !imageUrl) && (
             <div className="mb-2 p-3 bg-background/50 rounded-lg border">
               <div className="flex items-center gap-2">
                 {getFileIcon(mimeType)}

@@ -3,17 +3,20 @@ import { ChatSidebar } from './ChatSidebar';
 import { ChatHeader } from './ChatHeader';
 import { ChatArea } from './ChatArea';
 import { ChatInput } from './ChatInput';
+import { GroupList } from './GroupList';
+import { GroupChat } from './GroupChat';
 import { Button } from '@/components/ui/button';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Users, MessageSquare } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { useApi } from '@/lib/useApi';
 import { SocketContext } from '@/context/WebSocketContext';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { useToast } from '@/hooks/use-toast';
 import { playNotificationSound, requestNotificationPermission, showBrowserNotification } from '@/lib/utils';
 
-import type { Message, Friend, AllChats, SearchedUser } from '@/types/chat';
+import type { Message, Friend, AllChats, SearchedUser, Group } from '@/types/chat';
 
 const initialChats: AllChats = {
   friends: [
@@ -43,6 +46,11 @@ export function ChatApp() {
   const [isUploading, setIsUploading] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const [onlineUsers, setOnlineUsers] = useState<Set<number>>(new Set());
+  
+  // Group chat state
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const [activeTab, setActiveTab] = useState<'private' | 'groups'>('private');
+  
   const isMobile = useIsMobile();
   const { toast } = useToast();
 
@@ -88,27 +96,32 @@ export function ChatApp() {
             messages: [...updatedFriends[chatIndex].messages, newMessage]
           };
 
-          // Show notifications for all new messages
-          const senderName = data.fromName || `User ${data.from}`;
-          const isVoiceMessage = data.fileName?.includes('voice-message') || data.fileType?.startsWith('audio/');
-          const messagePreview = isVoiceMessage ? '🎤 Voice Message' : (data.fileName ? `📎 ${data.fileName}` : data.message);
+          // Show notifications for messages from other users only
+          const currentUserId = parseInt(localStorage.getItem('userId') || '0');
+          const fromId = Number(data.from);
           
-          // Show toast notification
-          toast({
-            title: `New message from ${senderName}`,
-            description: messagePreview,
-            duration: 5000,
-          });
+          if (fromId !== currentUserId) {
+            const senderName = data.fromName || `User ${data.from}`;
+            const isVoiceMessage = data.fileName?.includes('voice-message') || data.fileType?.startsWith('audio/');
+            const messagePreview = isVoiceMessage ? '🎤 Voice Message' : (data.fileName ? `📎 ${data.fileName}` : data.message);
+            
+            // Show toast notification
+            toast({
+              title: `New message from ${senderName}`,
+              description: messagePreview,
+              duration: 5000,
+            });
 
-          // Show browser notification
-          showBrowserNotification(
-            `New message from ${senderName}`,
-            messagePreview,
-            '/vite.svg'
-          );
+            // Show browser notification
+            showBrowserNotification(
+              `New message from ${senderName}`,
+              messagePreview,
+              '/vite.svg'
+            );
 
-          // Play notification sound
-          playNotificationSound();
+            // Play notification sound
+            playNotificationSound();
+          }
 
           // If message is from currently selected friend, mark as read immediately
           if (selectedFriendIndex === chatIndex) {
@@ -234,6 +247,50 @@ export function ChatApp() {
     socket.on('userStatusChange', handleOnlineStatusUpdate);
     socket.on('initialFriendsStatus', handleInitialFriendsStatus);
 
+    // Group message handling
+    const handleGroupMessage = (data: any) => {
+      console.log('Received group message:', data);
+      
+      // Show notifications for group messages from other users only
+      const currentUserId = parseInt(localStorage.getItem('userId') || '0');
+      const fromId = Number(data.from);
+      
+      if (fromId !== currentUserId) {
+        const senderName = data.fromName || `User ${data.from}`;
+        const groupName = data.groupName || 'Group';
+        const isVoiceMessage = data.fileName?.includes('voice-message') || data.fileType?.startsWith('audio/');
+        const messagePreview = isVoiceMessage ? '🎤 Voice Message' : (data.fileName ? `📎 ${data.fileName}` : data.message);
+        
+        // Show toast notification
+        toast({
+          title: `New message in ${groupName}`,
+          description: `${senderName}: ${messagePreview}`,
+          duration: 5000,
+        });
+
+        // Show browser notification
+        showBrowserNotification(
+          `New message in ${groupName}`,
+          `${senderName}: ${messagePreview}`,
+          '/vite.svg'
+        );
+
+        // Play notification sound
+        playNotificationSound();
+      }
+    };
+
+    const handleGroupMessageError = (data: any) => {
+      toast({
+        title: "Group Message Error",
+        description: data.error,
+        variant: "destructive",
+      });
+    };
+
+    socket.on('groupMessageReceived', handleGroupMessage);
+    socket.on('groupMessageError', handleGroupMessageError);
+
     return () => {
       socket.off('privateMessageReceived', handlePrivateMessage);
       socket.off('typingStart', handleTypingStart);
@@ -242,6 +299,8 @@ export function ChatApp() {
       socket.off('messageDelivered');
       socket.off('messagesRead');
       socket.off('initialFriendsStatus', handleInitialFriendsStatus);
+      socket.off('groupMessageReceived', handleGroupMessage);
+      socket.off('groupMessageError', handleGroupMessageError);
     };
   }, [socket, selectedFriendIndex, toast, selectedFriend, api]);
 
@@ -468,6 +527,15 @@ export function ChatApp() {
     }
   };
 
+  const handleGroupSelect = (group: Group) => {
+    setSelectedGroup(group);
+    setActiveTab('groups');
+  };
+
+  const handleGroupClose = () => {
+    setSelectedGroup(null);
+  };
+
   return (
     <div className="h-screen flex bg-background">
       {/* Mobile overlay */}
@@ -484,12 +552,36 @@ export function ChatApp() {
         isMobile ? "fixed inset-y-0 left-0" : "relative",
         isMobile && !isSidebarOpen ? "-translate-x-full" : "translate-x-0"
       )}>
-        <ChatSidebar
-          onChatSelect={handleChatSelect}
-          selectedChatId={selectedFriendIndex}
-          friends={friendsWithUnreadCounts}
-          onSendMessageToNewUser={handleSendMessageToNewUser}
-        />
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'private' | 'groups')} className="h-full">
+          <div className="p-4 border-b">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="private" className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" />
+                Private Chats
+              </TabsTrigger>
+              <TabsTrigger value="groups" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Groups
+              </TabsTrigger>
+            </TabsList>
+          </div>
+          
+          <TabsContent value="private" className="h-full mt-0">
+            <ChatSidebar
+              onChatSelect={handleChatSelect}
+              selectedChatId={selectedFriendIndex}
+              friends={friendsWithUnreadCounts}
+              onSendMessageToNewUser={handleSendMessageToNewUser}
+            />
+          </TabsContent>
+          
+          <TabsContent value="groups" className="h-full mt-0">
+            <GroupList
+              onSelectGroup={handleGroupSelect}
+              selectedGroupId={selectedGroup?.id}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Main chat area */}
@@ -509,12 +601,19 @@ export function ChatApp() {
           </div>
         )}
 
-        {selectedFriendIndex !== null ? (
+        {/* Main content switches based on active tab */}
+        {activeTab === 'groups' && selectedGroup ? (
+          <GroupChat
+            group={selectedGroup}
+            onClose={handleGroupClose}
+          />
+        ) : activeTab === 'private' && selectedFriendIndex !== null ? (
           <>
             <ChatHeader
               chatName={currentFriend?.friendDetails.name || ""}
               isOnline={onlineUsers.has(currentFriend?.friendDetails.id)}
               avatar={currentFriend?.friendDetails.avatar}
+              statusOverride={typingUsers.has(selectedFriend?.id) ? 'typing…' : undefined}
             />
             <ChatArea messages={messages} isTyping={typingUsers.has(selectedFriend?.id)} currentFriend={currentFriend} />
             <ChatInput 
@@ -530,7 +629,7 @@ export function ChatApp() {
                 Welcome to Chat
               </h3>
               <p className="text-muted-foreground">
-                Select a conversation to start messaging
+                Select a conversation or group to start messaging
               </p>
             </div>
           </div>

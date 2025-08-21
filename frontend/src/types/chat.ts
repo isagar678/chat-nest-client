@@ -38,3 +38,40 @@ export interface SearchedUser {
   avatar?: string;
 }
 
+// Group Chat Types
+export interface GroupMember {
+  id: number;
+  name: string;
+  userName: string;
+  avatar?: string;
+}
+
+export interface Group {
+  id: number;
+  name: string;
+  users: GroupMember[];
+  chats?: GroupMessage[];
+}
+
+export interface GroupMessage {
+  id: number;
+  content: string;
+  timeStamp: string;
+  read: boolean;
+  filePath?: string;
+  fileName?: string;
+  fileSize?: number;
+  mimeType?: string;
+  from: GroupMember;
+  group: {
+    id: number;
+    name: string;
+  };
+}
+
+export interface GroupChat {
+  group: Group;
+  messages: GroupMessage[];
+  unreadCount?: number;
+}
+

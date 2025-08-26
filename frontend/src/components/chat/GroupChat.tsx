@@ -76,46 +76,42 @@ export const GroupChat: React.FC<GroupChatProps> = ({ group, onClose }) => {
       
       if (data.groupId === group.id) {
         console.log('GroupChat: Message is for current group, adding to messages');
-        
-        // Check if this message is already in the state (prevent duplicates)
-        const isDuplicate = messages.some(msg => 
-          msg.content === data.message && 
-          msg.from.id === data.from &&
-          Math.abs(new Date(msg.timeStamp).getTime() - new Date(data.timestamp).getTime()) < 1000 // Within 1 second
-        );
-        
-        if (isDuplicate) {
-          console.log('GroupChat: Duplicate message detected, skipping...');
-          return;
-        }
-        
-        const newGroupMessage: GroupMessage = {
-          id: Date.now() + Math.random(), // Better unique ID generation
-          content: data.message,
-          timeStamp: data.timestamp || new Date().toISOString(),
-          read: false,
-          filePath: data.filePath,
-          fileName: data.fileName,
-          fileSize: data.fileSize,
-          mimeType: data.fileType,
-          from: {
-            id: data.from,
-            name: data.fromName || 'Unknown',
-            userName: 'unknown',
-          },
-          group: {
-            id: data.groupId,
-            name: group.name,
-          },
-        };
-        
-        console.log('GroupChat: Created new message object:', newGroupMessage);
-        
         setMessages(prev => {
-          const updatedMessages = [...prev, newGroupMessage];
-          console.log('GroupChat: Updated messages state, new count:', updatedMessages.length);
-          return updatedMessages;
+          // Prevent duplicates based on content, sender, and near-identical timestamp
+          const isDuplicate = prev.some(msg =>
+            msg.content === data.message &&
+            msg.from.id === data.from &&
+            Math.abs(new Date(msg.timeStamp).getTime() - new Date((data.timestamp || new Date().toISOString())) .getTime()) < 1000
+          );
+          if (isDuplicate) {
+            console.log('GroupChat: Duplicate message detected, skipping...');
+            return prev;
+          }
+          const newGroupMessage: GroupMessage = {
+            id: Date.now() + Math.random(),
+            content: data.message,
+            timeStamp: data.timestamp || new Date().toISOString(),
+            read: true, // viewing this group, mark as read
+            filePath: data.filePath,
+            fileName: data.fileName,
+            fileSize: data.fileSize,
+            mimeType: data.fileType,
+            from: {
+              id: data.from,
+              name: data.fromName || 'Unknown',
+              userName: 'unknown',
+            },
+            group: {
+              id: data.groupId,
+              name: group.name,
+            },
+          };
+          const updated = [...prev, newGroupMessage];
+          console.log('GroupChat: Updated messages state, new count:', updated.length);
+          return updated;
         });
+        // Inform server that messages are read since this group is open
+        try { socket.emit('markGroupMessagesRead', { groupId: group.id }); } catch {}
       } else {
         console.log('GroupChat: Message is not for current group:', data.groupId, 'vs', group.id);
       }
@@ -157,7 +153,7 @@ export const GroupChat: React.FC<GroupChatProps> = ({ group, onClose }) => {
       socket.off('groupMessageError', handleGroupMessageError);
       socket.off('groupMessagesRead', handleGroupMessagesRead);
     };
-  }, [socket, group.id, group.name, messages]);
+  }, [socket, group.id, group.name]);
 
   const loadMessages = async () => {
     setIsLoadingMessages(true);

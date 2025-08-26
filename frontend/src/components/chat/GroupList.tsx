@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -9,6 +9,7 @@ import { useApi } from '@/lib/useApi';
 import type { Group } from '@/types/chat';
 import { Users, MessageSquare, Plus } from 'lucide-react';
 import { CreateGroupModal } from './CreateGroupModal';
+import { SocketContext } from '@/context/WebSocketContext';
 
 interface GroupListProps {
   onSelectGroup: (group: Group) => void;
@@ -21,6 +22,7 @@ export const GroupList: React.FC<GroupListProps> = ({ onSelectGroup, selectedGro
   
   const { toast } = useToast();
   const api = useApi();
+  const socket = useContext(SocketContext);
 
   const loadGroups = async () => {
     setIsLoading(true);
@@ -42,6 +44,42 @@ export const GroupList: React.FC<GroupListProps> = ({ onSelectGroup, selectedGro
   useEffect(() => {
     loadGroups();
   }, []);
+
+  // Update unread counts and last message in realtime when a group message arrives
+  useEffect(() => {
+    if (!socket) return;
+    const handleGroupMessage = (data: any) => {
+      setGroups(prev => prev.map(g => {
+        if (g.id !== data.groupId) return g;
+        const newChat = {
+          id: Date.now() + Math.random(),
+          content: data.message,
+          timeStamp: data.timestamp,
+          read: selectedGroupId === g.id, // if currently viewing, mark read
+          filePath: data.filePath,
+          fileName: data.fileName,
+          fileSize: data.fileSize,
+          mimeType: data.fileType,
+          from: data.from,
+        } as any;
+        const chats = Array.isArray(g.chats) ? [...g.chats, newChat] : [newChat];
+        return { ...g, chats } as Group;
+      }));
+    };
+    const handleGroupMessagesRead = (data: { groupId: number }) => {
+      setGroups(prev => prev.map(g => {
+        if (g.id !== data.groupId) return g;
+        const chats = Array.isArray(g.chats) ? g.chats.map(c => ({ ...c, read: true })) : g.chats;
+        return { ...g, chats } as Group;
+      }));
+    };
+    socket.on('groupMessageReceived', handleGroupMessage);
+    socket.on('groupMessagesRead', handleGroupMessagesRead);
+    return () => {
+      socket.off('groupMessageReceived', handleGroupMessage);
+      socket.off('groupMessagesRead', handleGroupMessagesRead);
+    };
+  }, [socket, selectedGroupId]);
 
   const handleGroupCreated = () => {
     loadGroups(); // Refresh the list when a new group is created

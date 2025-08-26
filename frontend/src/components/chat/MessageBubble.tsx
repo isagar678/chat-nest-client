@@ -46,8 +46,9 @@ export function MessageBubble({ message, showAvatar = true, className, senderAva
     if (!filePath) return;
     
     try {
-      // Get the file URL from the server
-      const response = await api.get(`/user/file/${encodeURIComponent(filePath)}`);
+      // Get the file URL from the server; preserve path slashes for wildcard route
+      const encodedPath = encodeURI(filePath);
+      const response = await api.get(`/user/file/${encodedPath}`);
       const url = response.data.url;
       
       // Create a temporary link and trigger download
@@ -64,21 +65,24 @@ export function MessageBubble({ message, showAvatar = true, className, senderAva
 
   const handleVoicePlay = async () => {
     if (!filePath) return;
-    
     try {
+      // If we don't yet have a URL, fetch it and flip playing state; the effect below will start playback
       if (!audioUrl) {
-        // Get the file URL from the server
-        const response = await api.get(`/user/file/${encodeURIComponent(filePath)}`);
+        const encodedPath = encodeURI(filePath);
+        const response = await api.get(`/user/file/${encodedPath}`);
         const url = response.data.url;
         setAudioUrl(url);
+        setIsPlaying(true);
+        return;
       }
 
+      // If we have a URL, toggle play/pause on the existing audio element
       if (audioRef.current) {
         if (isPlaying) {
           audioRef.current.pause();
           setIsPlaying(false);
         } else {
-          audioRef.current.play();
+          await audioRef.current.play();
           setIsPlaying(true);
         }
       }
@@ -86,6 +90,20 @@ export function MessageBubble({ message, showAvatar = true, className, senderAva
       console.error('Failed to play voice message:', error);
     }
   };
+
+  // Auto-start/stop playback when audio URL becomes available or playing state changes
+  useEffect(() => {
+    if (!audioUrl) return;
+    if (!audioRef.current) return;
+    const el = audioRef.current;
+    if (isPlaying) {
+      el.play().catch(() => {
+        // Swallow autoplay errors; user interaction already happened
+      });
+    } else {
+      try { el.pause(); } catch {}
+    }
+  }, [audioUrl, isPlaying]);
 
   const handleAudioEnded = () => {
     setIsPlaying(false);
@@ -177,11 +195,13 @@ export function MessageBubble({ message, showAvatar = true, className, senderAva
                   <Download className="h-4 w-4" />
                 </Button>
               </div>
+              {/* Keep audio element in the tree once created so ref is stable */}
               {audioUrl && (
                 <audio
                   ref={audioRef}
                   src={audioUrl}
                   onEnded={handleAudioEnded}
+                  preload="auto"
                   className="hidden"
                 />
               )}

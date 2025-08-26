@@ -55,6 +55,11 @@ export const GroupChat: React.FC<GroupChatProps> = ({ group, onClose }) => {
 
   useEffect(() => {
     loadMessages();
+    if (socket) {
+      try {
+        socket.emit('markGroupMessagesRead', { groupId: group.id });
+      } catch {}
+    }
   }, [group.id]);
 
   useEffect(() => {
@@ -133,6 +138,11 @@ export const GroupChat: React.FC<GroupChatProps> = ({ group, onClose }) => {
     
     socket.on('groupMessageReceived', handleGroupMessage);
     socket.on('groupMessageError', handleGroupMessageError);
+    const handleGroupMessagesRead = (data: { groupId: number; readBy: number }) => {
+      if (data.groupId !== group.id) return;
+      setMessages(prev => prev.map(m => ({ ...m, read: true })));
+    };
+    socket.on('groupMessagesRead', handleGroupMessagesRead);
     socket.on('testResponse', (data: any) => {
       console.log('GroupChat: Received test response from server:', data);
     });
@@ -145,6 +155,7 @@ export const GroupChat: React.FC<GroupChatProps> = ({ group, onClose }) => {
       console.log('GroupChat: Cleaning up WebSocket listeners');
       socket.off('groupMessageReceived', handleGroupMessage);
       socket.off('groupMessageError', handleGroupMessageError);
+      socket.off('groupMessagesRead', handleGroupMessagesRead);
     };
   }, [socket, group.id, group.name, messages]);
 
@@ -153,6 +164,7 @@ export const GroupChat: React.FC<GroupChatProps> = ({ group, onClose }) => {
     try {
       const response = await api.get(`/group/${group.id}/messages?limit=50`);
       setMessages(response.data.reverse()); // Reverse to show newest at bottom
+      try { socket?.emit('markGroupMessagesRead', { groupId: group.id }); } catch {}
     } catch (error) {
       console.error('Error loading group messages:', error);
       toast({
@@ -350,14 +362,24 @@ export const GroupChat: React.FC<GroupChatProps> = ({ group, onClose }) => {
                               <span>{getFileIcon(message.mimeType || '')}</span>
                               <span>{message.fileName}</span>
                             </div>
-                            <a
-                              href={`${import.meta.env.VITE_SERVER_URL}/user/file/${message.filePath}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs underline hover:no-underline"
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-2"
+                              onClick={async () => {
+                                try {
+                                  if (!message.filePath) return;
+                                  const encodedPath = encodeURI(message.filePath);
+                                  const resp = await api.get(`/user/file/${encodedPath}`);
+                                  const url = resp.data.url;
+                                  window.open(url, '_blank');
+                                } catch (e) {
+                                  console.error('Failed to get download URL', e);
+                                }
+                              }}
                             >
-                              Download File
-                            </a>
+                              Download
+                            </Button>
                           </div>
                         )}
                       </div>

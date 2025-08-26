@@ -124,7 +124,7 @@ export function MessageBubble({ message, showAvatar = true, className, senderAva
     const fetchImageUrl = async () => {
       if (!filePath || !isImage) return;
       try {
-        const response = await api.get(`/user/file/${encodeURIComponent(filePath)}`);
+        const response = await api.get(`/user/file/${encodeURI(filePath)}`);
         setImageUrl(response.data.url);
       } catch (e) {
         // Fallback: leave as null so regular attachment UI shows

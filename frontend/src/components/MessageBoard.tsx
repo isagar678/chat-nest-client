@@ -19,7 +19,9 @@ function Chats({
   
   const socket = useContext(SocketContext);
 
-  useSocketEvents(socket, eventHandlers);
+  if (socket) {
+    useSocketEvents(socket, eventHandlers);
+  }
 
   const [messages, setMessages] = useState<MessageModel[]>([
     {

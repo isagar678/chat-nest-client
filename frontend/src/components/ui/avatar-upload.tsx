@@ -23,7 +23,7 @@ export function AvatarUpload({
   className,
   disabled = false
 }: AvatarUploadProps) {
-  const [isUploading, setIsUploading] = useState(false);
+  const [isUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 

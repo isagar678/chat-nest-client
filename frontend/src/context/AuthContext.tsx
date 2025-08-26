@@ -7,14 +7,26 @@ interface AuthContextType {
   user: any;
   accessToken: string | null;
   login: (credentials: { username: string; password: string }) => Promise<void>;
-  register: (credentials: { username: string; name: string; password: string }) => Promise<void>;
+  register: (credentials: { username?: string; userName?: string; name: string; email?: string; password: string }) => Promise<void>;
   logout: () => void;
   loginWithGoogle: () => void;
   loading: boolean;
   refreshUserData: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Provide a safe default value so consumers don't need to handle undefined
+const defaultAuthContext: AuthContextType = {
+  user: null,
+  accessToken: null,
+  login: async () => {},
+  register: async () => {},
+  logout: () => {},
+  loginWithGoogle: () => {},
+  loading: true,
+  refreshUserData: async () => {},
+};
+
+const AuthContext = createContext<AuthContextType>(defaultAuthContext);
 
 const API_BASE = getServerUrl();
 
@@ -210,8 +222,14 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   // Register
-  const register = async (credentials: { username: string; name: string; password: string }) => {
-    const response = await api.post('/auth/register', credentials);
+  const register = async (credentials: { username?: string; userName?: string; name: string; email?: string; password: string }) => {
+    const payload = {
+      username: credentials.username ?? credentials.userName ?? '',
+      name: credentials.name,
+      email: credentials.email,
+      password: credentials.password,
+    };
+    const response = await api.post('/auth/register', payload);
     const { access_token } = response.data;
     setAccessToken(access_token);
     localStorage.setItem('accessToken', access_token);

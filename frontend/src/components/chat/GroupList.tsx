@@ -1,13 +1,11 @@
-import React, { useState, useEffect, useContext, useCallback } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useApi } from '@/lib/useApi';
 import type { Group } from '@/types/chat';
-import { Users, MessageSquare, Plus } from 'lucide-react';
+import { Users} from 'lucide-react';
 import { CreateGroupModal } from './CreateGroupModal';
 import { SocketContext } from '@/context/WebSocketContext';
 

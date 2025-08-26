@@ -1,6 +1,6 @@
 import { getServerUrl } from './utils';
 
-export const refreshAvatarUrl = async (currentUrl: string): Promise<string | null> => {
+export const refreshAvatarUrl = async (_currentUrl?: string): Promise<string | null> => {
   try {
     // Create a direct fetch request instead of using the hook
     const token = localStorage.getItem('accessToken');

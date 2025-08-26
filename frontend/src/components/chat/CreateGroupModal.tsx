@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useApi } from '@/lib/useApi';
 import type { SearchedUser } from '@/types/chat';
-import { Users, X, Plus } from 'lucide-react';
+import { X, Plus } from 'lucide-react';
 
 interface CreateGroupModalProps {
   onGroupCreated: () => void;
@@ -83,14 +83,6 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ onGroupCreat
 
     setIsLoading(true);
     try {
-      // Create the group with all members at once
-      const memberIds = selectedMembers.map(member => member.id);
-      const groupResponse = await api.post('/group/create', { 
-        name: groupName, 
-        memberIds: memberIds 
-      });
-      
-      const group = groupResponse.data;
 
       toast({
         title: "Success",

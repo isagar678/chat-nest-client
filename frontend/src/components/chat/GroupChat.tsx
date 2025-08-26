@@ -30,7 +30,7 @@ export const GroupChat: React.FC<GroupChatProps> = ({ group, onClose }) => {
   const { toast } = useToast();
   const api = useApi();
   const socket = useContext(SocketContext);
-  const { accessToken, user } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

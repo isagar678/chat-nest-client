@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useState, useContext, useEffect } from "react"
+import { useState, useContext } from "react"
 import { useNavigate } from "react-router-dom"
 import AuthContext from "../context/AuthContext";
 

@@ -6,7 +6,7 @@ type HandlerMap = {
   [event: string]: (...args: any[]) => void;
 };
 
-export const useSocketEvents = (socket: Socket , handlers: HandlerMap,) => {
+export const useSocketEvents = (socket: Socket | null, handlers: HandlerMap) => {
   useEffect(() => {
     if (!socket) return;
 

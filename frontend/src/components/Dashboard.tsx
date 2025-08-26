@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useNavigate } from 'react-router-dom';
 import AuthContext from '@/context/AuthContext';
-import { User, MessageSquare, Settings, Heart, Stars, Bell, BellOff, Users } from 'lucide-react';
+import { User, MessageSquare, Heart, Stars, Bell, BellOff, Users } from 'lucide-react';
 import { requestNotificationPermission } from '@/lib/utils';
 
 export const Dashboard = () => {

@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
 import type { SearchedUser } from '@/types/chat';
+import { Avatar, AvatarFallback } from '@radix-ui/react-avatar';
 
 interface UserSearchModalProps {
   isOpen: boolean;

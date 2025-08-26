@@ -1,7 +1,7 @@
 import { useContext } from 'react';
 import { SmartAvatar } from '@/components/ui/smart-avatar';
 import { Button } from '@/components/ui/button';
-import { LogOut, User, Bot } from 'lucide-react';
+import { LogOut, Bot } from 'lucide-react';
 import AuthContext from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';

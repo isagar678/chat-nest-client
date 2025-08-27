@@ -224,7 +224,7 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Register
   const register = async (credentials: { username?: string; userName?: string; name: string; email?: string; password: string }) => {
     const payload = {
-      username: credentials.username ?? credentials.userName ?? '',
+      userName: credentials.userName ?? credentials.username ?? '',
       name: credentials.name,
       email: credentials.email,
       password: credentials.password,

@@ -21,19 +21,21 @@ export function RegisterForm({
         name: "",
         email: "",
         username: "",
-        password: ""
+        password: "",
+        confirmPassword: ""
     })
     const { register, loginWithGoogle } = useContext(AuthContext);
     const [showPassword, setShowPassword] = useState(false)
-    const [errors, setErrors] = useState<{ name?: string; username?: string; email?: string; password?: string }>({})
+    const [errors, setErrors] = useState<{ name?: string; username?: string; email?: string; password?: string; confirmPassword?: string }>({})
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const newErrors: { name?: string; username?: string; email?: string; password?: string } = {}
+        const newErrors: { name?: string; username?: string; email?: string; password?: string; confirmPassword?: string } = {}
         if (!formData.name.trim()) newErrors.name = "Name is required"
         if (!formData.username.trim()) newErrors.username = "Username is required"
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = "Enter a valid email"
         if (formData.password.length < 6) newErrors.password = "Password must be at least 6 characters"
+        if (formData.confirmPassword !== formData.password) newErrors.confirmPassword = "Passwords do not match"
         setErrors(newErrors)
         if (Object.keys(newErrors).length > 0) return
 
@@ -56,7 +58,7 @@ export function RegisterForm({
     };
     
     return (
-        <div className={cn("flex flex-col gap-6 w-full max-w-md mx-auto", className)} {...props}>
+        <div className={cn("flex flex-col gap-6 w-full max-w-lg mx-auto", className)} {...props}>
             <Card className="shadow-md transition-shadow hover:shadow-lg">
                 <CardHeader className="text-center space-y-2">
                     <CardTitle className="text-2xl">Create your account</CardTitle>
@@ -74,6 +76,7 @@ export function RegisterForm({
                                 value={formData.name}
                                 onChange={e => setFormData({ ...formData, name: e.target.value })}
                             />
+                            <p className="text-xs text-muted-foreground">This will be shown on your profile.</p>
                             {errors.name && (
                                 <p className="text-xs text-destructive">{errors.name}</p>
                             )}
@@ -88,6 +91,7 @@ export function RegisterForm({
                                 value={formData.username}
                                 onChange={e => setFormData({ ...formData, username: e.target.value })}
                             />
+                            <p className="text-xs text-muted-foreground">You can change this later.</p>
                             {errors.username && (
                                 <p className="text-xs text-destructive">{errors.username}</p>
                             )}
@@ -102,6 +106,7 @@ export function RegisterForm({
                                 value={formData.email}
                                 onChange={e => setFormData({ ...formData, email: e.target.value })}
                             />
+                            <p className="text-xs text-muted-foreground">We’ll send a confirmation email.</p>
                             {errors.email && (
                                 <p className="text-xs text-destructive">{errors.email}</p>
                             )}
@@ -134,6 +139,20 @@ export function RegisterForm({
                             </div>
                             {errors.password && (
                                 <p className="text-xs text-destructive">{errors.password}</p>
+                            )}
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="confirmPassword">Confirm password</Label>
+                            <Input
+                                id="confirmPassword"
+                                type="password"
+                                placeholder="Re-enter your password"
+                                required
+                                value={formData.confirmPassword}
+                                onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
+                            />
+                            {errors.confirmPassword && (
+                                <p className="text-xs text-destructive">{errors.confirmPassword}</p>
                             )}
                         </div>
 

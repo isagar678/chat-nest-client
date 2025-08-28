@@ -32,11 +32,8 @@ export function Profile() {
   const api = useApi();
   const auth = useContext(AuthContext);
 
-  console.log('AuthContext user:', auth?.user);
-  console.log('AuthContext accessToken:', auth?.accessToken);
 
   useEffect(() => {
-    console.log('Profile component mounted, fetching profile...');
     fetchProfile();
   }, []);
 
@@ -44,7 +41,6 @@ export function Profile() {
     try {
       const response = await api.get('/auth/profile');
       const userData = response.data;
-      console.log('Profile data received:', userData);
       setProfile(userData);
       setFormData({
         name: userData.name || '',
@@ -52,11 +48,9 @@ export function Profile() {
         email: userData.email || ''
       });
     } catch (error: any) {
-      console.error('Error fetching profile:', error);
       
       // Fallback to auth context user data if available
       if (auth?.user) {
-        console.log('Using auth context user data as fallback');
         setProfile(auth.user);
         setFormData({
           name: auth.user.name || '',

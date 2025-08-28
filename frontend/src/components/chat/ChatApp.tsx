@@ -172,7 +172,6 @@ export function ChatApp() {
     };
 
     const handleOnlineStatusUpdate = (data: any) => {
-      console.log('User status update:', data);
       setOnlineUsers(prev => {
         const newSet = new Set(prev);
         if (data.isOnline) {
@@ -185,7 +184,6 @@ export function ChatApp() {
     };
 
     const handleInitialFriendsStatus = (friendsStatus: any[]) => {
-      console.log('Initial friends status:', friendsStatus);
       const onlineFriendIds = new Set(
         friendsStatus.filter(friend => friend.isOnline).map(friend => friend.id)
       );
@@ -249,7 +247,6 @@ export function ChatApp() {
 
     // Group message handling
     const handleGroupMessage = (data: any) => {
-      console.log('Received group message:', data);
       
       // Show notifications for group messages from other users only
       const currentUserId = parseInt(localStorage.getItem('userId') || '0');
@@ -308,7 +305,6 @@ export function ChatApp() {
     const fetchUsers = async () => {
       try {
         const response = await api.get('/user/my/friends');
-        console.log('Users fetched:', response.data);
         setAllChats(response.data)
         setSelectedFriend(response.data.friends[0].friendDetails)
       } catch (error) {
@@ -370,7 +366,6 @@ export function ChatApp() {
     }
 
     if (socket) {
-      console.log('Sending message to:', selectedFriend);
 
       // Emit the message to the backend
       const clientMessageId = Date.now();

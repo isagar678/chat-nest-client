@@ -162,7 +162,6 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const urlAccessToken = urlParams.get('access_token');
       
       if (urlAccessToken) {
-        console.log('Found access token in URL parameters:', urlAccessToken);
         setAccessToken(urlAccessToken);
         api.defaults.headers.common['Authorization'] = `Bearer ${urlAccessToken}`;
         await fetchUserData(urlAccessToken);
